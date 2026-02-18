@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Chamados — Gestão de Manutenção</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <!-- NOTIFICAÇÃO -->
+  <div id="notif"></div>
+
+  <!-- HEADER (oculto na tela de login) -->
+  <div id="header" style="display:none">
+    <div class="header-logo">
+      <div class="logo-icon">⚙</div>
+      <div>
+        <div class="logo-title">SISTEMA DE CHAMADOS</div>
+        <div class="logo-sub">Gestão de Manutenção</div>
+      </div>
+    </div>
+    <div class="header-user">
+      <div class="user-info">
+        <div class="user-name" id="header-nome"></div>
+        <div class="user-cats" id="header-cats"></div>
+      </div>
+      <button class="btn-sair" onclick="fazerLogout()">Sair</button>
+    </div>
+  </div>
+
+  <!-- TELA LOGIN -->
+  <div id="screen-login" class="screen active">
+    <div class="login-box">
+      <div class="login-icon">⚙</div>
+      <h1 class="login-title">Sistema de Chamados</h1>
+      <p class="login-sub">Gestão de Manutenção por Células</p>
+      <p class="login-instr">Selecione seu perfil para entrar:</p>
+      <div class="login-grid" id="login-grid"></div>
+    </div>
+  </div>
+
+  <!-- MAIN (telas internas) -->
+  <main id="main-area" style="display:none">
+
+    <!-- TELA LISTA -->
+    <div id="screen-lista" class="screen">
+      <div class="page-wrap">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Central de Chamados</h2>
+            <p class="page-sub" id="lista-sub">0 chamado(s) registrado(s)</p>
+          </div>
+          <button class="btn-primary" onclick="irParaNovo()">+ Novo Chamado</button>
+        </div>
+        <div class="filtro-row" id="filtro-row">
+          <button class="filtro-btn active" data-filtro="todos" onclick="setFiltro(this,'todos')">Todos</button>
+          <button class="filtro-btn" data-filtro="meus" onclick="setFiltro(this,'meus')">Aguardando minha ação</button>
+          <button class="filtro-btn" data-filtro="encerrados" onclick="setFiltro(this,'encerrados')">Encerrados</button>
+        </div>
+        <div id="cards-container"></div>
+      </div>
+    </div>
+
+    <!-- TELA NOVO CHAMADO -->
+    <div id="screen-novo" class="screen">
+      <div class="page-wrap">
+        <div class="page-header">
+          <button class="btn-voltar" onclick="irParaLista()">← Voltar</button>
+          <h2 class="page-title">Novo Chamado</h2>
+        </div>
+        <div class="form-box">
+          <div class="etapa-banner">
+            <span class="etapa-num-big">Etapa 1</span>
+            <span class="etapa-nome-big">Abertura do Chamado</span>
+          </div>
+
+          <label class="lbl">Tipo de Chamado *</label>
+          <div id="tipo-selector-wrap"></div>
+
+          <div id="campos-tipo"></div>
+
+          <div style="display:flex;gap:12px;margin-top:24px">
+            <button class="btn-secondary" onclick="irParaLista()">Cancelar</button>
+            <button class="btn-primary" id="btn-enviar" onclick="criarChamado()" disabled>Abrir Chamado</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TELA CHAMADO -->
+    <div id="screen-chamado" class="screen">
+      <div class="page-wrap" style="gap:0">
+
+        <!-- CABEÇALHO FIXO -->
+        <div class="chamado-sticky-header">
+          <div class="chamado-sticky-inner">
+            <div class="page-header" style="margin:0">
+              <button class="btn-voltar" onclick="irParaLista()">← Voltar</button>
+              <div>
+                <h2 class="page-title" id="chamado-titulo-hdr"></h2>
+                <p class="page-sub" id="chamado-sub-hdr"></p>
+              </div>
+              <span id="chamado-status-tag" class="status-tag" style="align-self:center"></span>
+            </div>
+            <div id="chamado-steps-bar" class="steps-bar"></div>
+            <div id="chamado-current-box"></div>
+
+            <!-- ABAS (fixas no sticky header) -->
+            <div class="chamado-tabs">
+              <button class="tab-btn active" onclick="setTab('mensagens',this)">
+                💬 Mensagens
+                <span class="tab-badge" id="badge-mensagens">0</span>
+              </button>
+              <button class="tab-btn" onclick="setTab('formulario',this)">
+                📋 Formulário
+              </button>
+              <button class="tab-btn" onclick="setTab('anexos',this)">
+                📎 Anexos
+                <span class="tab-badge" id="badge-anexos" style="display:none">0</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONTEÚDO SCROLLÁVEL -->
+        <div style="display:flex;flex-direction:column;gap:20px;padding-top:20px">
+
+          <!-- PAINEL MENSAGENS -->
+          <div id="tab-mensagens" class="tab-panel active">
+            <div class="historico-wrap">
+              <div id="chamado-historico"></div>
+              <!-- Formulário de atendimento aparece aqui, após as mensagens -->
+              <div id="chamado-form-atender"></div>
+            </div>
+          </div>
+
+          <!-- PAINEL FORMULÁRIO -->
+          <div id="tab-formulario" class="tab-panel">
+            <div id="chamado-formulario"></div>
+          </div>
+
+          <!-- PAINEL ANEXOS -->
+          <div id="tab-anexos" class="tab-panel">
+            <div id="chamado-anexos"></div>
+          </div>
+
+        </div><!-- fim conteúdo scrollável -->
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL VOLTAR ETAPA -->
+  <div id="modal-voltar" style="display:none">
+    <div class="modal-overlay" onclick="fecharModalVoltar(event)">
+      <div class="modal-box" onclick="event.stopPropagation()">
+        <div class="modal-title">↩ Voltar Etapa</div>
+        <div class="modal-sub" id="modal-voltar-sub"></div>
+        <label class="lbl">Motivo da Devolução *</label>
+        <select class="inp" id="modal-motivo-select" onchange="syncMotivoSelect()">
+          <option value="">— Selecione um motivo —</option>
+          <option>Informações insuficientes</option>
+          <option>Erro no diagnóstico</option>
+          <option>Orçamento incorreto ou incompleto</option>
+          <option>Material recebido com defeito ou divergente</option>
+          <option>Serviço executado incorretamente</option>
+          <option>Documento / anexo faltando</option>
+          <option>Solicitação de revisão pelo gestor</option>
+          <option>Outro</option>
+        </select>
+        <label class="lbl">Observação *</label>
+        <textarea class="inp" id="modal-obs" rows="4" placeholder="Descreva o motivo detalhado da devolução..."></textarea>
+        <div style="display:flex;gap:12px;margin-top:8px">
+          <button class="btn-secondary" onclick="fecharModalVoltar()">Cancelar</button>
+          <button class="btn-danger" onclick="confirmarVoltarEtapa()">↩ Confirmar Devolução</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ANEXO -->
+  <div id="modal-anexo" style="display:none">
+    <div class="modal-anexo-overlay" onclick="fecharModalAnexo(event)">
+      <div class="modal-anexo-box" onclick="event.stopPropagation()">
+        <div class="modal-anexo-header">
+          <div class="modal-anexo-nome" id="modal-anexo-nome"></div>
+          <button class="btn-fechar-modal" onclick="fecharModalAnexo()">✕</button>
+        </div>
+        <div id="modal-anexo-preview"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+          <div style="font-size:12px;color:var(--muted)" id="modal-anexo-meta"></div>
+          <a id="btn-baixar-anexo" class="btn-baixar" download>⬇ Baixar Arquivo</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
