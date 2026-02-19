@@ -1,0 +1,614 @@
+/* ==================== ESTILOS DO FLUXO DE ETAPAS ==================== */
+
+.etapas-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px 0;
+}
+
+/* Card da Etapa */
+.etapa-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 2px solid #e5e7eb;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.etapa-card.expandida {
+    border-color: #0095db;
+    box-shadow: 0 4px 12px rgba(0, 149, 219, 0.15);
+}
+
+.etapa-card.concluida {
+    border-color: #10b981;
+    opacity: 0.95;
+}
+
+/* Header da Etapa */
+.etapa-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    cursor: pointer;
+    background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+    border-bottom: 1px solid #e5e7eb;
+    transition: all 0.2s;
+}
+
+.etapa-header:hover {
+    background: linear-gradient(135deg, #f3f4f6 0%, #f9fafb 100%);
+}
+
+.etapa-card.expandida .etapa-header {
+    background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
+    border-bottom-color: #0095db;
+}
+
+.etapa-card.concluida .etapa-header {
+    background: linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%);
+    border-bottom-color: #10b981;
+}
+
+.etapa-header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+}
+
+.etapa-numero {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0095db 0%, #2a91c2 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 18px;
+    box-shadow: 0 4px 12px rgba(0, 149, 219, 0.3);
+    flex-shrink: 0;
+}
+
+.etapa-card.concluida .etapa-numero {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.etapa-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.etapa-titulo {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 4px;
+}
+
+.etapa-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.etapa-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.etapa-status.em-andamento {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.etapa-status.concluida {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.etapa-categoria {
+    font-size: 12px;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.etapa-conclusao {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 4px;
+}
+
+.etapa-conclusao strong {
+    color: #374151;
+    font-weight: 600;
+}
+
+.etapa-toggle {
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: #f3f4f6;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.etapa-toggle:hover {
+    background: #e5e7eb;
+    transform: scale(1.05);
+}
+
+.etapa-toggle:active {
+    transform: scale(0.95);
+}
+
+.etapa-toggle svg {
+    width: 20px;
+    height: 20px;
+    stroke: #6b7280;
+    fill: none;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 0.3s;
+}
+
+.etapa-card.expandida .etapa-toggle svg {
+    transform: rotate(180deg);
+}
+
+/* Conteúdo da Etapa */
+.etapa-conteudo {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.etapa-card.expandida .etapa-conteudo {
+    max-height: 3000px;
+}
+
+.etapa-conteudo-inner {
+    padding: 24px;
+}
+
+/* Dados da Etapa Anterior (somente leitura) */
+.etapa-dados-anteriores {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.etapa-dados-anteriores h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+}
+
+.dado-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+}
+
+.dado-item:last-child {
+    margin-bottom: 0;
+}
+
+.dado-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+}
+
+.dado-valor {
+    font-size: 14px;
+    color: #111827;
+    font-weight: 500;
+}
+
+/* Formulário da Etapa */
+.etapa-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-group-etapa {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-label-etapa {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.form-label-etapa.required::after {
+    content: '*';
+    color: #ef4444;
+    margin-left: 4px;
+}
+
+.form-input-etapa,
+.form-select-etapa,
+.form-textarea-etapa {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #111827;
+    background: white;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+.form-input-etapa:focus,
+.form-select-etapa:focus,
+.form-textarea-etapa:focus {
+    outline: none;
+    border-color: #0095db;
+    box-shadow: 0 0 0 3px rgba(0, 149, 219, 0.1);
+}
+
+.form-textarea-etapa {
+    min-height: 100px;
+    resize: vertical;
+}
+
+/* Botões de Ação */
+.etapa-acoes {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.btn-etapa {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-etapa-primary {
+    background: #0095db;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 149, 219, 0.3);
+}
+
+.btn-etapa-primary:hover {
+    background: #007ab8;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 149, 219, 0.4);
+}
+
+.btn-etapa-primary:active {
+    transform: translateY(0);
+}
+
+.btn-etapa-success {
+    background: #10b981;
+    color: white;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-etapa-success:hover {
+    background: #059669;
+    transform: translateY(-2px);
+}
+
+.btn-etapa-danger {
+    background: #ef4444;
+    color: white;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.btn-etapa-danger:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+}
+
+.btn-etapa svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Lista de Produtos (para orçamento) */
+.produtos-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.produto-item {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 12px;
+    padding: 12px;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.produto-numero {
+    grid-column: 1 / -1;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    margin-bottom: 4px;
+}
+
+/* Upload de Arquivos */
+.file-upload-etapa {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.file-upload-btn-etapa {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s;
+    width: fit-content;
+}
+
+.file-upload-btn-etapa:hover {
+    background: #e5e7eb;
+    border-color: #9ca3af;
+}
+
+.file-upload-btn-etapa svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+}
+
+.file-name-etapa {
+    font-size: 13px;
+    color: #6b7280;
+    font-style: italic;
+}
+
+/* Preview de Anexos */
+.anexos-preview {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+
+.anexo-thumb {
+    width: 100px;
+    height: 100px;
+    border-radius: 8px;
+    border: 2px solid #e5e7eb;
+    object-fit: cover;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.anexo-thumb:hover {
+    border-color: #0095db;
+    transform: scale(1.05);
+}
+
+/* Histórico de Reprovações */
+.historico-reprovacoes {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.historico-reprovacoes h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #991b1b;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.reprovacao-item {
+    padding: 12px;
+    background: white;
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+.reprovacao-item:last-child {
+    margin-bottom: 0;
+}
+
+.reprovacao-meta {
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 6px;
+}
+
+.reprovacao-motivo {
+    font-size: 14px;
+    color: #111827;
+}
+
+/* Subetapas */
+.subetapas-container {
+    margin-left: 32px;
+    margin-top: 16px;
+    padding-left: 20px;
+    border-left: 3px solid #dbeafe;
+}
+
+.subetapa-card {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    overflow: hidden;
+}
+
+.subetapa-card.expandida {
+    border-color: #0095db;
+    background: white;
+}
+
+.subetapa-header {
+    padding: 12px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background 0.2s;
+}
+
+.subetapa-header:hover {
+    background: #f3f4f6;
+}
+
+.subetapa-card.expandida .subetapa-header {
+    background: #eff6ff;
+}
+
+.subetapa-titulo {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+}
+
+/* Modo Somente Leitura */
+.etapa-card.somente-leitura {
+    opacity: 0.9;
+}
+
+.etapa-card.somente-leitura .etapa-form {
+    pointer-events: none;
+}
+
+.etapa-card.somente-leitura .form-input-etapa,
+.etapa-card.somente-leitura .form-select-etapa,
+.etapa-card.somente-leitura .form-textarea-etapa {
+    background: #f9fafb;
+    color: #6b7280;
+}
+
+/* Indicador de Chamado Finalizado */
+.chamado-finalizado-banner {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 16px 24px;
+    border-radius: 12px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.chamado-finalizado-banner svg {
+    width: 24px;
+    height: 24px;
+    stroke: white;
+    fill: none;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .etapa-header-left {
+        gap: 12px;
+    }
+    
+    .etapa-numero {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+    
+    .etapa-titulo {
+        font-size: 14px;
+    }
+    
+    .etapa-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+    
+    .produto-item {
+        grid-template-columns: 1fr;
+    }
+    
+    .etapa-acoes {
+        flex-direction: column;
+    }
+    
+    .btn-etapa {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .subetapas-container {
+        margin-left: 16px;
+        padding-left: 12px;
+    }
+}

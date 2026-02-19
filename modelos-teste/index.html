@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Chamados - NDS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/fluxo-etapas.css">
+    <link rel="stylesheet" href="css/chamado-detalhes.css">
+    <script src="js/auth-integration.js"></script>
+</head>
+
+<body>
+    <!-- Overlay da Sidebar (Mobile) -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <!-- Logo NDS -->
+        <div class="logo">
+            <img src="img/logo_nds.png" alt="Logo NDS" class="logo-nds">
+        </div>
+
+        <!-- Linha Horizontal -->
+        <div class="logo-divider"></div>
+
+        <!-- Botão Novo Chamado -->
+        <button class="new-ticket-btn" id="btnNovoChamado">
+            <svg class="btn-icon" viewBox="0 0 24 24">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Novo Chamado
+        </button>
+
+        <!-- Navegação -->
+        <nav class="nav-section">
+            <div class="nav-main">
+                <!-- Dashboard -->
+                <div class="nav-item active">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                    </span>
+                    <span>Dashboard</span>
+                </div>
+
+                <!-- Caixa de Entrada -->
+                <div class="nav-item">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24">
+                            <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline>
+                            <path
+                                d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z">
+                            </path>
+                        </svg>
+                    </span>
+                    <span>Caixa de Entrada</span>
+                </div>
+
+                <!-- Caixa Log -->
+                <div class="nav-item">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                    </span>
+                    <span>Caixa Log</span>
+                </div>
+
+                <!-- Caixa de Saída -->
+                <div class="nav-item">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                    </span>
+                    <span>Caixa de Saída</span>
+                </div>
+            </div>
+
+            <!-- Divisor antes de Configurações -->
+            <div class="nav-divider"></div>
+
+            <!-- Configurações -->
+            <div class="nav-settings">
+                <div class="nav-item">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path
+                                d="M12 1v6m0 6v6m8.66-13.66l-4.24 4.24m-4.24 4.24l-4.24 4.24m13.66 0l-4.24-4.24m-4.24-4.24l-4.24-4.24">
+                            </path>
+                        </svg>
+                    </span>
+                    <span>Configurações</span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Rodapé do Usuário -->
+        <div class="sidebar-footer">
+            <div class="user-profile">
+                <div class="user-avatar">US</div>
+                <div class="user-info">
+                    <div class="user-name">Usuário</div>
+                    <div class="user-email">Carregando...</div>
+                </div>
+                <button class="logout-btn" onclick="logout()" title="Sair do sistema">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Conteúdo Principal -->
+    <main class="main-content">
+        <!-- Header Mobile -->
+        <header class="mobile-header">
+            <button class="menu-toggle" id="menuToggle">
+                <svg viewBox="0 0 24 24">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+            <h1 class="mobile-header-title">Sistema de Chamados</h1>
+        </header>
+
+        <!-- Conteúdo -->
+        <div class="content">
+            <!-- Dashboard -->
+            <div id="dashboardPage" class="page-content active">
+                <div class="page-header">
+                    <h1 class="page-title">Dashboard</h1>
+                </div>
+
+                <div class="table-container">
+                    <p>Conteúdo do dashboard...</p>
+                </div>
+            </div>
+
+            <!-- Caixa de Entrada -->
+            <div id="caixaEntradaPage" class="page-content">
+                <div class="page-header">
+                    <h1 class="page-title">Caixa de Entrada</h1>
+                </div>
+
+                <!-- Filtros -->
+                <div class="filters-container">
+                    <div class="filter-group">
+                        <input type="text" class="filter-input" id="filtroEntradaNumero"
+                            placeholder="Buscar por número ou nome...">
+                    </div>
+                    <div class="filter-group">
+                        <input type="date" class="filter-input" id="filtroEntradaData">
+                    </div>
+                    <div class="filter-group">
+                        <select class="filter-select" id="filtroEntradaTipo">
+                            <option value="">Todos os tipos</option>
+                            <option value="manutencao">Manutenção</option>
+                            <option value="pedido_anual">Pedido Anual</option>
+                            <option value="pedido_avulso">Pedido Avulso</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Cards de Chamados -->
+                <div class="tickets-grid" id="ticketsEntradaGrid">
+                    <!-- Cards serão inseridos aqui via JavaScript -->
+                </div>
+            </div>
+
+            <!-- Caixa Log -->
+            <div id="caixaLogPage" class="page-content">
+                <div class="page-header">
+                    <h1 class="page-title">Caixa Log</h1>
+                </div>
+
+                <!-- Filtros -->
+                <div class="filters-container">
+                    <div class="filter-group">
+                        <input type="text" class="filter-input" id="filtroLogNumero"
+                            placeholder="Buscar por número ou nome...">
+                    </div>
+                    <div class="filter-group">
+                        <input type="date" class="filter-input" id="filtroLogData">
+                    </div>
+                    <div class="filter-group">
+                        <select class="filter-select" id="filtroLogTipo">
+                            <option value="">Todos os tipos</option>
+                            <option value="manutencao">Manutenção</option>
+                            <option value="pedido_anual">Pedido Anual</option>
+                            <option value="pedido_avulso">Pedido Avulso</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Cards de Chamados -->
+                <div class="tickets-grid" id="ticketsLogGrid">
+                    <!-- Cards serão inseridos aqui via JavaScript -->
+                </div>
+            </div>
+
+            <!-- Caixa de Saída -->
+            <div id="caixaSaidaPage" class="page-content">
+                <div class="page-header">
+                    <h1 class="page-title">Caixa de Saída</h1>
+                </div>
+
+                <!-- Filtros -->
+                <div class="filters-container">
+                    <div class="filter-group">
+                        <input type="text" class="filter-input" id="filtroSaidaNumero"
+                            placeholder="Buscar por número ou nome...">
+                    </div>
+                    <div class="filter-group">
+                        <input type="date" class="filter-input" id="filtroSaidaData">
+                    </div>
+                    <div class="filter-group">
+                        <select class="filter-select" id="filtroSaidaTipo">
+                            <option value="">Todos os tipos</option>
+                            <option value="manutencao">Manutenção</option>
+                            <option value="pedido_anual">Pedido Anual</option>
+                            <option value="pedido_avulso">Pedido Avulso</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Cards de Chamados -->
+                <div class="tickets-grid" id="ticketsSaidaGrid">
+                    <!-- Cards serão inseridos aqui via JavaScript -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Tela de Novo Chamado -->
+    <div class="new-ticket-screen" id="newTicketScreen">
+        <div class="ticket-header">
+            <div class="ticket-header-left">
+                <button class="back-btn" id="btnVoltar">
+                    <svg viewBox="0 0 24 24">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                </button>
+                <h2 class="ticket-title">Novo Chamado</h2>
+            </div>
+        </div>
+
+        <div class="ticket-form-container">
+            <div class="ticket-form-card">
+                <form id="newTicketForm">
+                    <div class="form-grid">
+                        <!-- Tipo de Chamado -->
+                        <div class="form-group">
+                            <label class="form-label required">Tipo de Chamado</label>
+                            <select class="form-select" id="ticketType" required>
+                                <option value="">Selecione o tipo</option>
+                                <option value="manutencao">Manutenção</option>
+                                <option value="pedido_anual">Pedido Anual</option>
+                                <option value="pedido_avulso">Pedido Avulso</option>
+                            </select>
+                        </div>
+
+                        <!-- Campos de Manutenção -->
+                        <div class="ticket-fields hidden" id="manutencaoFields">
+                            <h3 class="section-title">Detalhes da Manutenção</h3>
+
+                            <div class="form-row-2">
+                                <div class="form-group">
+                                    <label class="form-label required">Unidade</label>
+                                    <select class="form-select" id="unidade">
+                                        <option value="">Selecione</option>
+                                        <option value="CANTEIRO ZONA OESTE">CANTEIRO ZONA OESTE</option>
+                                        <option value="CANTEIRO ZONA LESTE">CANTEIRO ZONA LESTE</option>
+                                        <option value="CANTEIRO ZONA SUL">CANTEIRO ZONA SUL</option>
+                                        <option value="CANTEIRO CAIEIRAS">CANTEIRO CAIEIRAS</option>
+                                        <option value="BOSQUE">BOSQUE</option>
+                                        <option value="HUNGRIA">HUNGRIA</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label required">Local</label>
+                                    <select class="form-select" id="local">
+                                        <option value="">Selecione</option>
+                                        <option value="SALA">SALA</option>
+                                        <option value="COZINHA">COZINHA</option>
+                                        <option value="BANHEIRO">BANHEIRO</option>
+                                        <option value="VESTIARIO">VESTIÁRIO</option>
+                                        <option value="REFEITORIO">REFEITÓRIO</option>
+                                        <option value="CPD">CPD</option>
+                                        <option value="PATIO">PÁTIO</option>
+                                        <option value="OUTRO">OUTRO</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group hidden" id="localOutroGroup">
+                                <label class="form-label required">Especifique o Local</label>
+                                <input type="text" class="form-input" id="localOutro" placeholder="Digite o local">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Tipo de Manutenção (Selecione uma ou mais)</label>
+                                <div class="tipo-manutencao-checkboxes">
+                                    <label class="tipo-checkbox">
+                                        <input type="checkbox" name="tipoManutencao" value="ELÉTRICA">
+                                        <span>Elétrica</span>
+                                    </label>
+                                    <label class="tipo-checkbox">
+                                        <input type="checkbox" name="tipoManutencao" value="HIDRÁULICA">
+                                        <span>Hidráulica</span>
+                                    </label>
+                                    <label class="tipo-checkbox">
+                                        <input type="checkbox" name="tipoManutencao" value="PINTURA">
+                                        <span>Pintura</span>
+                                    </label>
+                                    <label class="tipo-checkbox">
+                                        <input type="checkbox" name="tipoManutencao" value="CARPINTARIA">
+                                        <span>Carpintaria</span>
+                                    </label>
+                                    <label class="tipo-checkbox">
+                                        <input type="checkbox" name="tipoManutencao" value="LIMPEZA">
+                                        <span>Limpeza</span>
+                                    </label>
+                                    <label class="tipo-checkbox">
+                                        <input type="checkbox" name="tipoManutencao" value="OUTRO" id="checkOutroTipo">
+                                        <span>Outro</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group hidden" id="tipoManutencaoOutroGroup">
+                                <label class="form-label required">Especifique o Tipo de Manutenção</label>
+                                <input type="text" class="form-input" id="tipoManutencaoOutro"
+                                    placeholder="Digite o tipo de manutenção">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Título</label>
+                                <input type="text" class="form-input" id="tituloManutencao"
+                                    placeholder="Breve descrição do problema">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Observação Detalhada</label>
+                                <textarea class="form-textarea" id="observacaoManutencao"
+                                    placeholder="Descreva detalhadamente o problema..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Foto (Opcional)</label>
+                                <div class="file-upload">
+                                    <label for="fotoUpload" class="file-upload-btn">
+                                        <svg viewBox="0 0 24 24">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="17 8 12 3 7 8"></polyline>
+                                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                                        </svg>
+                                        Selecionar Foto
+                                    </label>
+                                    <input type="file" id="fotoUpload" accept="image/*" style="display: none;">
+                                    <span class="file-name" id="fileName">Nenhum arquivo selecionado</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Campos de Pedido Anual -->
+                        <div class="ticket-fields hidden" id="pedidoAnualFields">
+                            <h3 class="section-title">Detalhes do Pedido Anual</h3>
+
+                            <div class="form-group">
+                                <label class="form-label required">Descrição do Item</label>
+                                <input type="text" class="form-input" id="descricaoPedidoAnual"
+                                    placeholder="Ex: Notebooks para laboratório">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Quantidade</label>
+                                <input type="number" class="form-input" id="quantidadePedidoAnual" min="1"
+                                    placeholder="0">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Justificativa</label>
+                                <textarea class="form-textarea" id="justificativaPedidoAnual"
+                                    placeholder="Explique a necessidade deste pedido..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Documento Anexo (Opcional)</label>
+                                <div class="file-upload">
+                                    <label for="documentoPedidoAnual" class="file-upload-btn">
+                                        <svg viewBox="0 0 24 24">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="17 8 12 3 7 8"></polyline>
+                                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                                        </svg>
+                                        Selecionar Documento
+                                    </label>
+                                    <input type="file" id="documentoPedidoAnual" accept=".pdf,.doc,.docx"
+                                        style="display: none;">
+                                    <span class="file-name" id="fileNameAnual">Nenhum arquivo selecionado</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Campos de Pedido Avulso -->
+                        <div class="ticket-fields hidden" id="pedidoAvulsoFields">
+                            <h3 class="section-title">Detalhes do Pedido Avulso</h3>
+
+                            <div class="form-group">
+                                <label class="form-label required">Item Solicitado</label>
+                                <input type="text" class="form-input" id="itemPedidoAvulso" placeholder="Ex: Papel A4">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Quantidade</label>
+                                <input type="number" class="form-input" id="quantidadePedidoAvulso" min="1"
+                                    placeholder="0">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Urgência</label>
+                                <select class="form-select" id="urgenciaPedidoAvulso">
+                                    <option value="">Selecione</option>
+                                    <option value="BAIXA">Baixa</option>
+                                    <option value="MÉDIA">Média</option>
+                                    <option value="ALTA">Alta</option>
+                                    <option value="URGENTE">Urgente</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Motivo</label>
+                                <textarea class="form-textarea" id="motivoPedidoAvulso"
+                                    placeholder="Explique o motivo deste pedido avulso..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Documento Anexo (Opcional)</label>
+                                <div class="file-upload">
+                                    <label for="documentoPedidoAvulso" class="file-upload-btn">
+                                        <svg viewBox="0 0 24 24">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="17 8 12 3 7 8"></polyline>
+                                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                                        </svg>
+                                        Selecionar Documento
+                                    </label>
+                                    <input type="file" id="documentoPedidoAvulso" accept=".pdf,.doc,.docx"
+                                        style="display: none;">
+                                    <span class="file-name" id="fileNameAvulso">Nenhum arquivo selecionado</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botões de Ação -->
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel" id="btnCancelar">Cancelar</button>
+                        <button type="submit" class="btn-submit">Criar Chamado</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TELA DE DETALHES DO CHAMADO ==================== -->
+    <div class="chamado-detalhes-screen" id="ticketDetailsScreen">
+
+        <!-- Cabeçalho -->
+        <div class="chamado-detalhes-header">
+            <div class="chamado-detalhes-header-left">
+                <button class="chamado-voltar-btn" id="btnVoltarDetalhes">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    Voltar
+                </button>
+                <div class="chamado-detalhes-titulo-wrapper">
+                    <div class="chamado-detalhes-top">
+                        <h2 class="chamado-detalhes-numero" id="detailsTicketNumber">#20260001</h2>
+                        <span class="chamado-detalhes-badge" id="detailsStatusBadge">Em andamento</span>
+                    </div>
+                    <p class="chamado-detalhes-titulo" id="detailsTicketTitle">Título do Chamado</p>
+                </div>
+            </div>
+            <div class="chamado-detalhes-header-right">
+                <div class="chamado-meta-pill">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span id="detailsDataAbertura">-</span>
+                </div>
+                <div class="chamado-meta-pill">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span id="detailsAbertoPor">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Barra de Progresso das Etapas -->
+        <div class="chamado-progresso-wrapper">
+            <div class="chamado-progresso-scroll">
+                <div class="chamado-progresso-linha" id="progressoLinha"></div>
+            </div>
+        </div>
+
+        <!-- Painel da Etapa Atual -->
+        <div class="chamado-etapa-atual-panel" id="etapaAtualPanel">
+            <div class="chamado-etapa-atual-info">
+                <div class="chamado-etapa-atual-icone" id="etapaAtualIcone">2</div>
+                <div>
+                    <p class="chamado-etapa-atual-label">Etapa atual</p>
+                    <h3 class="chamado-etapa-atual-titulo" id="etapaAtualTitulo">Agendamento da Avaliação</h3>
+                    <p class="chamado-etapa-atual-resp">
+                        Responsável: <strong id="etapaAtualResponsavel">Administração de Manutenção</strong>
+                    </p>
+                </div>
+            </div>
+            <div id="etapaAtualPermissao" class="chamado-etapa-sem-permissao">Sem permissão para atender esta etapa
+            </div>
+        </div>
+
+        <!-- Abas: Mensagens / Formulário / Anexos -->
+        <div class="chamado-abas-wrapper">
+            <div class="chamado-abas-nav">
+                <button class="chamado-aba-btn active" data-aba="mensagens">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    Mensagens
+                    <span class="chamado-aba-badge" id="badgeMensagens">0</span>
+                </button>
+                <button class="chamado-aba-btn" data-aba="formulario">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                    Formulário
+                </button>
+                <button class="chamado-aba-btn" data-aba="anexos">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path
+                            d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48">
+                        </path>
+                    </svg>
+                    Anexos
+                </button>
+            </div>
+
+            <!-- Aba Mensagens -->
+            <div class="chamado-aba-conteudo active" id="aba-mensagens">
+                <div class="chamado-mensagens-lista" id="historyMessages">
+                    <!-- mensagens inseridas via JS -->
+                </div>
+            </div>
+
+            <!-- Aba Formulário -->
+            <div class="chamado-aba-conteudo" id="aba-formulario">
+                <div id="chamadoFormularioContainer">
+                    <!-- formulário da etapa atual inserido via JS -->
+                </div>
+            </div>
+
+            <!-- Aba Anexos -->
+            <div class="chamado-aba-conteudo" id="aba-anexos">
+                <div class="chamado-anexos-lista" id="chamadoAnexosLista">
+                    <div class="chamado-sem-anexos">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                            stroke-linecap="round">
+                            <path
+                                d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48">
+                            </path>
+                        </svg>
+                        <p>Nenhum anexo enviado</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="js/script.js"></script>
+    <script src="js/fluxo-chamados.js"></script>
+    <script src="js/renderizador-etapas.js"></script>
+
+</body>
+
+</html>
