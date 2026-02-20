@@ -1,0 +1,671 @@
+/* ==========================================================================
+   02-TELA-PRINCIPAL.CSS — TELA PRINCIPAL / DASHBOARD
+   Contém: Sidebar de navegação, cabeçalho mobile, área de conteúdo,
+   filtros de busca, grade de cards de chamados e badges de status/tipo.
+   Depende de: 00-geral.css (variáveis, reset, botões, inputs)
+   ========================================================================== */
+
+
+/* --------------------------------------------------------------------------
+   LAYOUT RAIZ
+   Divide a tela entre sidebar fixa (196px) e conteúdo principal flexível.
+   -------------------------------------------------------------------------- */
+body {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;   /* Impede scroll no body; cada painel rola individualmente */
+    position: relative;
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    margin-left: var(--sidebar-width);          /* Recua para não sobrepor a sidebar */
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+
+/* ==========================================================================
+   SIDEBAR — BARRA DE NAVEGAÇÃO LATERAL
+   ========================================================================== */
+
+/* Container principal da sidebar — posição fixa na borda esquerda */
+.sidebar {
+    width: var(--sidebar-width);                /* 196px definido em 00-geral.css */
+    background: linear-gradient(180deg, #0095db 0%, #2a91c2 100%);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 0;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 1000;                              /* Fica acima do conteúdo principal */
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* --- LOGOTIPO NA SIDEBAR --- */
+.logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    margin-bottom: 0;
+}
+
+.logo-nds {
+    width: 100%;
+    max-width: 120px;
+    height: auto;
+}
+
+/* Linha divisória fina abaixo do logo */
+.logo-divider {
+    width: calc(100% - 24px);
+    height: 1px;
+    background: rgba(255, 255, 255, 0.2);
+    margin: 12px 12px;
+}
+
+/* Quadradinho branco com ícone SVG azul (variante de logo) */
+.logo-icon {
+    width: 36px;
+    height: 36px;
+    background: white;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-icon svg {
+    width: 20px;
+    height: 20px;
+    fill: var(--color-primary);
+}
+
+.logo-text {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* --- ÁREA DE NAVEGAÇÃO --- */
+.nav-section {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.nav-main { flex: 1; }   /* Itens principais empurram as configs para baixo */
+
+/* Linha divisória entre grupos de itens de nav */
+.nav-divider {
+    width: calc(100% - 24px);
+    height: 1px;
+    background: rgba(255, 255, 255, 0.15);
+    margin: 8px 12px;
+}
+
+/* Grupo de configurações fixo no fundo da sidebar */
+.nav-settings {
+    margin-top: auto;
+    padding-bottom: 10px;
+}
+
+/* --- BOTÃO "NOVO CHAMADO" (outline branco) --- */
+.new-ticket-btn {
+    width: calc(100% - 16px);
+    margin: 0 8px 12px;
+    padding: 12px 16px;
+    background: transparent;
+    color: white;
+    border: 2px solid white;           /* Estilo outline (só contorno) */
+    border-radius: 0;                  /* Borda sem arredondamento por design */
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.2s, border-color 0.2s, transform 0.1s;
+    letter-spacing: 0.5px;
+}
+
+.new-ticket-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.9);
+}
+
+.new-ticket-btn:active { transform: scale(0.98); }
+
+/* Ícone "+" dentro do botão */
+.new-ticket-btn .btn-icon {
+    width: 18px;
+    height: 18px;
+    stroke: white;
+    fill: none;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* --- ITENS DE NAVEGAÇÃO --- */
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    color: rgba(255, 255, 255, 0.8);   /* Levemente transparente quando inativo */
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    margin: 2px 8px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+}
+
+.nav-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+/* Item de nav ativo/selecionado */
+.nav-item.active {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+}
+
+/* Container do ícone SVG do item de nav */
+.nav-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nav-icon svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* --- PERFIL DO USUÁRIO (rodapé da sidebar) --- */
+.sidebar-footer {
+    padding: 0 12px;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    position: relative;
+}
+
+/* Avatar com iniciais do usuário */
+.user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    background: #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 13px;
+    color: #666;
+    flex-shrink: 0;
+}
+
+.user-info {
+    flex: 1;
+    min-width: 0;          /* Permite que texto longo seja truncado com ellipsis */
+}
+
+.user-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-email {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.7);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Botão de logout posicionado à direita do perfil */
+.logout-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, transform 0.2s;
+    padding: 0;
+}
+
+.logout-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-50%) scale(1.05);
+}
+
+.logout-btn:active { transform: translateY(-50%) scale(0.95); }
+
+.logout-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke: white;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* --- OVERLAY DA SIDEBAR (mobile) ---
+   Fundo escuro que aparece quando a sidebar está aberta no mobile.
+   Clicar nele fecha a sidebar.                                             */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;          /* Logo abaixo da sidebar (z-index 1000) */
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.sidebar-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
+
+/* ==========================================================================
+   CABEÇALHO MOBILE
+   Visível apenas em telas menores; exibe botão de menu e título da página.
+   ========================================================================== */
+.mobile-header {
+    display: none;             /* Escondido no desktop */
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: white;
+    border-bottom: 1px solid var(--color-gray-200);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+/* Botão hambúrguer que abre a sidebar no mobile */
+.menu-toggle {
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: transform 0.1s;
+}
+
+.menu-toggle:active { transform: scale(0.95); }
+
+.menu-toggle svg {
+    width: 24px;
+    height: 24px;
+    stroke: var(--color-gray-700);
+    stroke-width: 2;
+    stroke-linecap: round;
+    fill: none;
+}
+
+.mobile-header-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-gray-900);
+}
+
+
+/* ==========================================================================
+   ÁREA DE CONTEÚDO PRINCIPAL
+   ========================================================================== */
+
+.content {
+    flex: 1;
+    padding: 40px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;  /* Scroll suave no iOS */
+}
+
+/* Cabeçalho da página (título) */
+.page-header {
+    margin-bottom: 30px;
+}
+
+.page-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--color-gray-900);
+}
+
+/* Container genérico de tabela/listagem com fundo branco */
+.table-container {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Controle de qual página de conteúdo está visível */
+.page-content { display: none; }
+.page-content.active { display: block; }
+
+
+/* ==========================================================================
+   FILTROS DE BUSCA
+   Grade com 3 colunas: busca por texto | status | tipo.
+   ========================================================================== */
+.filters-container {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;  /* Busca ocupa mais espaço */
+    gap: 16px;
+    margin-bottom: 24px;
+    background: white;
+    padding: 20px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Inputs e selects dos filtros — mesmos estilos de 00-geral.css */
+.filter-input,
+.filter-select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--color-gray-300);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    color: var(--color-gray-900);
+    background: white;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-family: inherit;
+}
+
+.filter-input:focus,
+.filter-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-focus);
+}
+
+
+/* ==========================================================================
+   GRADE DE CARDS DE CHAMADOS
+   Layout responsivo com colunas automáticas de no mínimo 350px.
+   ========================================================================== */
+.tickets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+/* Mensagem quando não há chamados para exibir */
+.no-tickets {
+    grid-column: 1 / -1;      /* Ocupa toda a largura da grade */
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--color-gray-500);
+    font-size: 15px;
+}
+
+
+/* ==========================================================================
+   CARD DE CHAMADO
+   Card clicável com informações resumidas do chamado.
+   ========================================================================== */
+.ticket-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+    border: 1px solid var(--color-gray-200);
+}
+
+/* Hover: eleva o card e destaca a borda com o azul primário */
+.ticket-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+    border-color: var(--color-primary);
+}
+
+/* --- CABEÇALHO DO CARD (badge de tipo + número) --- */
+.ticket-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+/* Badge colorido indicando o tipo do chamado */
+.ticket-type-badge {
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Cores por tipo de chamado */
+.ticket-type-badge.tipo-manutencao     { background: #fef3c7; color: #92400e; } /* Amarelo */
+.ticket-type-badge.tipo-pedido_anual   { background: #dbeafe; color: #1e40af; } /* Azul */
+.ticket-type-badge.tipo-pedido_avulso  { background: #d1fae5; color: #065f46; } /* Verde */
+
+/* Número identificador do chamado */
+.ticket-card-number {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+/* --- TÍTULO DO CHAMADO --- */
+.ticket-card-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin-bottom: 16px;
+    line-height: 1.4;
+}
+
+/* --- INFORMAÇÕES SECUNDÁRIAS (solicitante, local, data) --- */
+.ticket-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--color-gray-200);
+}
+
+.ticket-card-info .info-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--color-gray-500);
+}
+
+/* Ícone de cada item de informação */
+.info-icon {
+    width: 16px;
+    height: 16px;
+    stroke: var(--color-gray-400);
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+}
+
+/* --- RODAPÉ DO CARD (SLA e responsável) --- */
+.ticket-card-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.footer-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+}
+
+.footer-label {
+    color: var(--color-gray-500);
+    font-weight: 500;
+}
+
+.footer-value {
+    color: var(--color-gray-900);
+    font-weight: 600;
+}
+
+/* Cores de SLA por urgência */
+.sla-no-prazo          { color: #059669 !important; }  /* Verde — dentro do prazo */
+.sla-atrasado          { color: #dc2626 !important; }  /* Vermelho — atrasado */
+.sla-proximo-do-prazo  { color: #f59e0b !important; }  /* Amarelo — próximo do limite */
+
+
+/* ==========================================================================
+   RESPONSIVIDADE — TELA PRINCIPAL
+   ========================================================================== */
+
+/* --- Tablet (≤ 1024px) --- */
+@media (max-width: 1024px) {
+    .content { padding: 30px 24px; }
+    .page-title { font-size: 28px; }
+
+    /* Cards menores */
+    .tickets-grid {
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+
+    /* Filtros: busca em linha própria, status e tipo lado a lado */
+    .filters-container {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .filter-group:first-child {
+        grid-column: 1 / -1;     /* Campo de busca ocupa toda a largura */
+    }
+}
+
+/* --- Mobile (≤ 768px) ---
+   Sidebar se move para fora da tela; cabeçalho mobile aparece.            */
+@media (max-width: 768px) {
+    /* Esconde a sidebar (visível via toggle) */
+    .sidebar { transform: translateX(-100%); }
+
+    /* Abre a sidebar quando a classe .open é adicionada */
+    .sidebar.open {
+        transform: translateX(0);
+        box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Conteúdo ocupa tela inteira sem margem da sidebar */
+    .main-content { margin-left: 0; }
+
+    /* Exibe o cabeçalho mobile */
+    .mobile-header { display: flex; }
+
+    .content { padding: 20px 16px; }
+    .page-title { font-size: 24px; }
+    .table-container { padding: 16px; }
+
+    /* Filtros em coluna única */
+    .filters-container {
+        grid-template-columns: 1fr;
+        padding: 16px;
+    }
+
+    /* Cards em coluna única */
+    .tickets-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+}
+
+/* --- Smartphones pequenos (≤ 480px) --- */
+@media (max-width: 480px) {
+    .mobile-header { padding: 12px 16px; }
+    .mobile-header-title { font-size: 16px; }
+    .menu-toggle { width: 36px; height: 36px; }
+    .content { padding: 16px 12px; }
+    .page-title { font-size: 22px; }
+    .new-ticket-btn { font-size: 14px; padding: 11px 18px; }
+    .nav-item { font-size: 13px; }
+    .sidebar { width: 260px; }  /* Ligeiramente mais larga para telas pequenas */
+}
+
+/* --- Correção de altura para iOS Safari --- */
+@supports (-webkit-touch-callout: none) {
+    .sidebar { height: -webkit-fill-available; }
+}
+
+
+/* --- BADGE DE CONTAGEM NOS ITENS DE NAV --- */
+.nav-badge {
+    margin-left: auto;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    background: white;
+    color: var(--color-primary);
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Badge vermelho quando há itens na Entrada (ação necessária) */
+.nav-item[data-page="caixaEntradaPage"] .nav-badge {
+    background: #ff4444;
+    color: white;
+}

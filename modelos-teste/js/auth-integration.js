@@ -1,97 +1,146 @@
-// ==================== INTEGRAÇÃO ENTRE LOGIN E SISTEMA PRINCIPAL ==================== //
+// =============================================================================
+// AUTH-INTEGRATION.JS — Autenticação e sessão do usuário
+// Responsabilidades:
+//   - Verificar se o usuário está logado em todas as páginas
+//   - Redirecionar para login.html se não autenticado
+//   - Preencher informações do usuário na sidebar (nome, perfil, avatar)
+//   - Controlar visibilidade de elementos por perfil
+//   - Expor checkAuth(), logout(), hasPermission() globalmente
+//
+// IMPORTANTE: Este arquivo é carregado com <script> no <head> do index.html
+// (antes do DOMContentLoaded), então as funções globais ficam disponíveis
+// para script.js e os demais arquivos JS.
+// =============================================================================
 
-// ==================== VERIFICAÇÃO DE AUTENTICAÇÃO ==================== //
 
+// =============================================================================
+// VERIFICAÇÃO DE AUTENTICAÇÃO
+// =============================================================================
+
+/**
+ * Verifica se há um usuário logado no localStorage.
+ * - Se estiver no login.html e já logado → redireciona para index.html
+ * - Se estiver em outra página e não logado → redireciona para login.html
+ * @returns {Object|null} Objeto do usuário logado, ou null
+ */
 function checkAuth() {
     const currentUser = localStorage.getItem('currentUser');
-    
-    // Se não estiver na página de login e não tiver usuário, redireciona
-    if (!window.location.pathname.includes('login.html') && !currentUser) {
+    const naLoginPage = window.location.pathname.includes('login.html') ||
+                        window.location.pathname === '/' ||
+                        window.location.pathname.endsWith('/');
+
+    // Na tela de login: se já logado, redireciona para o sistema
+    if (naLoginPage) {
+        if (currentUser) window.location.href = 'index.html';
+        return null;
+    }
+
+    // Nas demais páginas: sem sessão, redireciona para login
+    if (!currentUser) {
         window.location.href = 'login.html';
         return null;
     }
 
-    if (!currentUser) return null;
-
     const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
     const user = usuarios.find(u => u.usuario === currentUser);
 
+    // Sessão inválida (usuário removido), limpa e redireciona
     if (!user) {
         localStorage.removeItem('currentUser');
-        if (!window.location.pathname.includes('login.html')) {
-            window.location.href = 'login.html';
-        }
+        window.location.href = 'login.html';
         return null;
     }
 
     return user;
 }
 
-// ==================== FUNÇÕES DE PERFIL E PERMISSÕES ==================== //
 
+// =============================================================================
+// PERMISSÕES
+// =============================================================================
+
+/**
+ * Retorna o perfil do usuário logado, ou null se não autenticado.
+ * @returns {string|null}
+ */
 function getUserProfile() {
-    const user = checkAuth();
+    const currentUser = localStorage.getItem('currentUser');
+    if (!currentUser) return null;
+    const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
+    const user = usuarios.find(u => u.usuario === currentUser);
     return user ? user.perfil : null;
 }
 
+/**
+ * Verifica se o usuário logado possui um dos perfis permitidos.
+ * @param {string[]} allowedProfiles - Lista de perfis que têm acesso
+ * @returns {boolean}
+ */
 function hasPermission(allowedProfiles) {
     const profile = getUserProfile();
-    return profile && allowedProfiles.includes(profile);
+    return !!(profile && allowedProfiles.includes(profile));
 }
 
+
+// =============================================================================
+// PREENCHIMENTO DA SIDEBAR COM DADOS DO USUÁRIO
+// =============================================================================
+
+/**
+ * Preenche nome, perfil e avatar na sidebar com base no usuário logado.
+ * Também controla visibilidade de elementos restritos por perfil.
+ * Usa os IDs definidos no index.html: #userName, #userEmail, #userAvatar.
+ */
 function showElementsByPermission() {
-    const profile = getUserProfile();
-    const user = checkAuth();
-    
-    if (!profile || !user) return;
+    const currentUser = localStorage.getItem('currentUser');
+    if (!currentUser) return;
 
-    // Elemento de configurações na navegação
-    const configNav = document.querySelector('.nav-settings');
-    
-    // Mostrar/ocultar configurações baseado no perfil
-    if (configNav) {
-        if (profile === 'ADMIN') {
-            configNav.style.display = 'block';
-        } else {
-            configNav.style.display = 'none';
-        }
+    const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
+    const user = usuarios.find(u => u.usuario === currentUser);
+    if (!user) return;
+
+    const perfilNomes = {
+        'ADMIN':          'Administrador',
+        'SOLICITANTE':    'Solicitante',
+        'TECNICO':        'Técnico',
+        'ADMINISTRATIVO': 'Administrativo',
+        'COMPRADOR':      'Comprador'
+    };
+
+    // --- Nome completo do usuário ---
+    const userNameEl = document.getElementById('userName');
+    if (userNameEl) userNameEl.textContent = user.nomeCompleto;
+
+    // --- Perfil exibido abaixo do nome (campo "e-mail" reutilizado como cargo) ---
+    const userEmailEl = document.getElementById('userEmail');
+    if (userEmailEl) userEmailEl.textContent = perfilNomes[user.perfil] || user.perfil;
+
+    // --- Iniciais no avatar ---
+    const userAvatarEl = document.getElementById('userAvatar');
+    if (userAvatarEl) {
+        const partes = user.nomeCompleto.trim().split(' ');
+        const iniciais = partes.length >= 2
+            ? partes[0][0] + partes[partes.length - 1][0]
+            : partes[0].substring(0, 2);
+        userAvatarEl.textContent = iniciais.toUpperCase();
     }
 
-    // Atualizar informações do usuário na sidebar
-    const userNameElement = document.querySelector('.user-name');
-    const userEmailElement = document.querySelector('.user-email');
-    const userAvatarElement = document.querySelector('.user-avatar');
-    
-    if (userNameElement) {
-        userNameElement.textContent = user.nomeCompleto;
-    }
-    
-    if (userEmailElement) {
-        const perfilNomes = {
-            'ADMIN': 'Administrador',
-            'SOLICITANTE': 'Solicitante',
-            'TECNICO': 'Técnico',
-            'ADMINISTRATIVO': 'Administrativo',
-            'COMPRADOR': 'Comprador'
-        };
-        userEmailElement.textContent = perfilNomes[user.perfil] || user.perfil;
-    }
-
-    if (userAvatarElement) {
-        // Pegar iniciais do nome
-        const nomes = user.nomeCompleto.split(' ');
-        let iniciais = '';
-        if (nomes.length >= 2) {
-            iniciais = nomes[0][0] + nomes[nomes.length - 1][0];
-        } else {
-            iniciais = nomes[0][0] + (nomes[0][1] || '');
-        }
-        userAvatarElement.textContent = iniciais.toUpperCase();
+    // --- Ocultar "Configurações" para perfis sem acesso administrativo ---
+    const navSettings = document.querySelector('.nav-settings');
+    if (navSettings) {
+        navSettings.style.display = ['ADMIN'].includes(user.perfil) ? 'block' : 'none';
     }
 }
 
-// ==================== LOGOUT ==================== //
 
+// =============================================================================
+// LOGOUT
+// =============================================================================
+
+/**
+ * Encerra a sessão do usuário após confirmação e redireciona para o login.
+ * Chamado diretamente via onclick="logout()" no botão da sidebar.
+ */
 function logout() {
     if (confirm('Deseja realmente sair do sistema?')) {
         localStorage.removeItem('currentUser');
@@ -100,74 +149,74 @@ function logout() {
     }
 }
 
-// ==================== INICIALIZAÇÃO ==================== //
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Verificar se está na página de login
-    if (window.location.pathname.includes('login.html')) {
-        // Se já está logado, redirecionar para o sistema
-        const currentUser = localStorage.getItem('currentUser');
-        if (currentUser) {
-            window.location.href = 'index.html';
-        }
-        return;
-    }
+// =============================================================================
+// INICIALIZAÇÃO AUTOMÁTICA NO DOMContentLoaded
+// Executado apenas no index.html (e outras páginas que não sejam login).
+// =============================================================================
 
-    // Verificar autenticação nas outras páginas
+document.addEventListener('DOMContentLoaded', function () {
+    const naLoginPage = window.location.pathname.includes('login.html') ||
+                        window.location.pathname === '/' ||
+                        window.location.pathname.endsWith('/');
+
+    // Não executa lógica de sessão na tela de login
+    if (naLoginPage) return;
+
     const user = checkAuth();
-    
     if (user) {
-        // Configurar permissões e informações do usuário
         showElementsByPermission();
-
-        // Adicionar evento de logout ao clicar no perfil do usuário
-        const userProfile = document.querySelector('.user-profile');
-        if (userProfile) {
-            // Remover cursor pointer padrão e adicionar apenas no botão de logout
-            userProfile.style.cursor = 'default';
-        }
     }
 });
 
-// ==================== FUNÇÕES AUXILIARES DE PERMISSÃO ==================== //
 
-// Exemplo: Verificar permissão antes de abrir tela
+// =============================================================================
+// FUNÇÕES AUXILIARES DE PERMISSÃO (exemplos reutilizáveis)
+// =============================================================================
+
+/** Abre a tela de usuários (apenas ADMIN) */
 function abrirTelaUsuarios() {
     if (!hasPermission(['ADMIN'])) {
         alert('Você não tem permissão para acessar esta área!');
         return;
     }
-    // Código para abrir tela de usuários
+    // TODO: implementar abertura da tela de usuários
 }
 
-// Exemplo: Verificar permissão antes de salvar
+/** Salva uma categoria (ADMIN, TECNICO ou ADMINISTRATIVO) */
 function salvarCategoria() {
     if (!hasPermission(['ADMIN', 'TECNICO', 'ADMINISTRATIVO'])) {
         alert('Você não tem permissão para editar categorias!');
         return;
     }
-    // Código para salvar categoria
+    // TODO: implementar salvamento de categoria
 }
 
-// Exemplo: Obter dados do usuário atual
+/**
+ * Retorna chamados visíveis para o usuário logado.
+ * Admin/Técnico/Administrativo veem todos; demais veem apenas os seus.
+ */
 function getChamadosDoUsuario() {
-    const user = checkAuth();
+    const currentUser = localStorage.getItem('currentUser');
+    if (!currentUser) return [];
+
+    const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
+    const user = usuarios.find(u => u.usuario === currentUser);
     if (!user) return [];
 
     const chamados = JSON.parse(localStorage.getItem('chamados') || '[]');
-    
-    if (user.perfil === 'ADMIN' || user.perfil === 'TECNICO' || user.perfil === 'ADMINISTRATIVO') {
-        // Admin, técnico e administrativo veem todos
-        return chamados;
-    } else {
-        // Outros veem apenas os seus
-        return chamados.filter(c => c.solicitante === user.usuario);
-    }
+
+    return ['ADMIN', 'TECNICO', 'ADMINISTRATIVO'].includes(user.perfil)
+        ? chamados
+        : chamados.filter(c => c.solicitante === user.usuario);
 }
 
-// ==================== EXPORTAR FUNÇÕES ==================== //
-window.checkAuth = checkAuth;
-window.getUserProfile = getUserProfile;
-window.hasPermission = hasPermission;
-window.logout = logout;
+
+// =============================================================================
+// EXPORTAR PARA ESCOPO GLOBAL
+// =============================================================================
+window.checkAuth              = checkAuth;
+window.getUserProfile         = getUserProfile;
+window.hasPermission          = hasPermission;
+window.logout                 = logout;
 window.showElementsByPermission = showElementsByPermission;

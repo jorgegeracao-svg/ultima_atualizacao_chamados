@@ -5,28 +5,51 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Chamados - NDS</title>
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="css/fluxo-etapas.css">
-    <link rel="stylesheet" href="css/chamado-detalhes.css">
+
+    <!--
+        CSS — Ordem de importação:
+        1. 00-geral.css                    → Variáveis, reset, componentes globais
+        2. 02-tela-principal.css           → Sidebar, layout, filtros, cards de chamados
+        3. 03-novo-chamado-e-detalhes.css  → Formulário de novo chamado + tela de detalhes
+        4. 04-etapas.css                   → Fluxo de etapas (workflow)
+    -->
+    <link rel="stylesheet" href="css/00-geral.css">
+    <link rel="stylesheet" href="css/02-tela-principal.css">
+    <link rel="stylesheet" href="css/03-novo-chamado-e-detalhes.css">
+    <link rel="stylesheet" href="css/04-etapas.css">
+    <link rel="stylesheet" href="css/06-user-search.css">
+
+    <!-- Auth: verifica sessão antes de renderizar a página -->
     <script src="js/auth-integration.js"></script>
 </head>
 
 <body>
-    <!-- Overlay da Sidebar (Mobile) -->
+
+    <!-- =====================================================================
+         OVERLAY DA SIDEBAR (Mobile)
+         Fundo escuro que aparece quando a sidebar está aberta.
+         Clicar nele fecha a sidebar. Gerenciado via JavaScript.
+    ====================================================================== -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <!-- Sidebar -->
+
+    <!-- =====================================================================
+         SIDEBAR — NAVEGAÇÃO LATERAL
+         Fixa na esquerda em desktop; desliza sobre a tela em mobile.
+    ====================================================================== -->
     <aside class="sidebar" id="sidebar">
+
         <!-- Logo NDS -->
         <div class="logo">
             <img src="img/logo_nds.png" alt="Logo NDS" class="logo-nds">
         </div>
 
-        <!-- Linha Horizontal -->
+        <!-- Divisor abaixo do logo -->
         <div class="logo-divider"></div>
 
-        <!-- Botão Novo Chamado -->
-        <button class="new-ticket-btn" id="btnNovoChamado">
+        <!-- Botão de ação principal: abrir formulário de novo chamado -->
+        <button class="new-ticket-btn" id="btnNovoChamado" aria-label="Abrir formulário de novo chamado">
+            <!-- Ícone de "+" -->
             <svg class="btn-icon" viewBox="0 0 24 24">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -34,11 +57,12 @@
             Novo Chamado
         </button>
 
-        <!-- Navegação -->
-        <nav class="nav-section">
+        <!-- Itens de navegação principal -->
+        <nav class="nav-section" aria-label="Menu principal">
             <div class="nav-main">
+
                 <!-- Dashboard -->
-                <div class="nav-item active">
+                <div class="nav-item active" data-page="dashboardPage" role="button" tabindex="0">
                     <span class="nav-icon">
                         <svg viewBox="0 0 24 24">
                             <rect x="3" y="3" width="7" height="7"></rect>
@@ -51,7 +75,7 @@
                 </div>
 
                 <!-- Caixa de Entrada -->
-                <div class="nav-item">
+                <div class="nav-item" data-page="caixaEntradaPage" role="button" tabindex="0">
                     <span class="nav-icon">
                         <svg viewBox="0 0 24 24">
                             <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline>
@@ -60,11 +84,12 @@
                             </path>
                         </svg>
                     </span>
-                    <span>Caixa de Entrada</span>
+                    <span>Aguardando sua ação</span>
+                    <span class="nav-badge" id="badgeEntrada" style="display:none;">0</span>
                 </div>
 
                 <!-- Caixa Log -->
-                <div class="nav-item">
+                <div class="nav-item" data-page="caixaLogPage" role="button" tabindex="0">
                     <span class="nav-icon">
                         <svg viewBox="0 0 24 24">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -74,11 +99,12 @@
                             <polyline points="10 9 9 9 8 9"></polyline>
                         </svg>
                     </span>
-                    <span>Caixa Log</span>
+                    <span>Em andamento</span>
+                    <span class="nav-badge" id="badgeLog" style="display:none;">0</span>
                 </div>
 
                 <!-- Caixa de Saída -->
-                <div class="nav-item">
+                <div class="nav-item" data-page="caixaSaidaPage" role="button" tabindex="0">
                     <span class="nav-icon">
                         <svg viewBox="0 0 24 24">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -86,16 +112,18 @@
                             <line x1="12" y1="15" x2="12" y2="3"></line>
                         </svg>
                     </span>
-                    <span>Caixa de Saída</span>
+                    <span>Finalizados</span>
+                    <span class="nav-badge" id="badgeSaida" style="display:none;">0</span>
                 </div>
+
             </div>
 
-            <!-- Divisor antes de Configurações -->
+            <!-- Divisor antes das configurações -->
             <div class="nav-divider"></div>
 
-            <!-- Configurações -->
+            <!-- Configurações (fixas no final da nav) -->
             <div class="nav-settings">
-                <div class="nav-item">
+                <div class="nav-item" data-page="configPage" role="button" tabindex="0">
                     <span class="nav-icon">
                         <svg viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="3"></circle>
@@ -109,15 +137,17 @@
             </div>
         </nav>
 
-        <!-- Rodapé do Usuário -->
+        <!-- Perfil do usuário + botão de logout (rodapé da sidebar) -->
         <div class="sidebar-footer">
             <div class="user-profile">
-                <div class="user-avatar">US</div>
+                <!-- Iniciais do usuário (preenchidas via JavaScript) -->
+                <div class="user-avatar" id="userAvatar">US</div>
                 <div class="user-info">
-                    <div class="user-name">Usuário</div>
-                    <div class="user-email">Carregando...</div>
+                    <div class="user-name" id="userName">Usuário</div>
+                    <div class="user-email" id="userEmail">Carregando...</div>
                 </div>
-                <button class="logout-btn" onclick="logout()" title="Sair do sistema">
+                <!-- Botão de logout -->
+                <button class="logout-btn" onclick="logout()" title="Sair do sistema" aria-label="Sair do sistema">
                     <svg viewBox="0 0 24 24">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                         <polyline points="16 17 21 12 16 7"></polyline>
@@ -126,13 +156,21 @@
                 </button>
             </div>
         </div>
-    </aside>
 
-    <!-- Conteúdo Principal -->
+    </aside>
+    <!-- /SIDEBAR -->
+
+
+    <!-- =====================================================================
+         CONTEÚDO PRINCIPAL
+         Ocupa todo o espaço à direita da sidebar.
+    ====================================================================== -->
     <main class="main-content">
-        <!-- Header Mobile -->
+
+        <!-- Cabeçalho mobile: visível apenas em telas pequenas -->
         <header class="mobile-header">
-            <button class="menu-toggle" id="menuToggle">
+            <!-- Botão hambúrguer que abre/fecha a sidebar -->
+            <button class="menu-toggle" id="menuToggle" aria-label="Abrir menu de navegação">
                 <svg viewBox="0 0 24 24">
                     <line x1="3" y1="12" x2="21" y2="12"></line>
                     <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -142,26 +180,32 @@
             <h1 class="mobile-header-title">Sistema de Chamados</h1>
         </header>
 
-        <!-- Conteúdo -->
+        <!-- Área de conteúdo com scroll -->
         <div class="content">
-            <!-- Dashboard -->
+
+            <!-- =============================================================
+                 PÁGINA: DASHBOARD
+                 Visível por padrão (classe .active). Conteúdo inserido via JS.
+            ============================================================== -->
             <div id="dashboardPage" class="page-content active">
                 <div class="page-header">
                     <h1 class="page-title">Dashboard</h1>
                 </div>
-
                 <div class="table-container">
                     <p>Conteúdo do dashboard...</p>
                 </div>
             </div>
 
-            <!-- Caixa de Entrada -->
+            <!-- =============================================================
+                 PÁGINA: CAIXA DE ENTRADA
+                 Lista chamados que aguardam ação do usuário logado.
+            ============================================================== -->
             <div id="caixaEntradaPage" class="page-content">
                 <div class="page-header">
-                    <h1 class="page-title">Caixa de Entrada</h1>
+                    <h1 class="page-title">Aguardando sua ação</h1>
                 </div>
 
-                <!-- Filtros -->
+                <!-- Filtros de busca -->
                 <div class="filters-container">
                     <div class="filter-group">
                         <input type="text" class="filter-input" id="filtroEntradaNumero"
@@ -180,19 +224,20 @@
                     </div>
                 </div>
 
-                <!-- Cards de Chamados -->
-                <div class="tickets-grid" id="ticketsEntradaGrid">
-                    <!-- Cards serão inseridos aqui via JavaScript -->
-                </div>
+                <!-- Grade de cards — preenchida via JavaScript -->
+                <div class="tickets-grid" id="ticketsEntradaGrid"></div>
             </div>
 
-            <!-- Caixa Log -->
+            <!-- =============================================================
+                 PÁGINA: CAIXA LOG
+                 Histórico de todos os chamados finalizados/arquivados.
+            ============================================================== -->
             <div id="caixaLogPage" class="page-content">
                 <div class="page-header">
-                    <h1 class="page-title">Caixa Log</h1>
+                    <h1 class="page-title">Em andamento</h1>
                 </div>
 
-                <!-- Filtros -->
+                <!-- Filtros de busca -->
                 <div class="filters-container">
                     <div class="filter-group">
                         <input type="text" class="filter-input" id="filtroLogNumero"
@@ -211,19 +256,20 @@
                     </div>
                 </div>
 
-                <!-- Cards de Chamados -->
-                <div class="tickets-grid" id="ticketsLogGrid">
-                    <!-- Cards serão inseridos aqui via JavaScript -->
-                </div>
+                <!-- Grade de cards — preenchida via JavaScript -->
+                <div class="tickets-grid" id="ticketsLogGrid"></div>
             </div>
 
-            <!-- Caixa de Saída -->
+            <!-- =============================================================
+                 PÁGINA: CAIXA DE SAÍDA
+                 Chamados criados pelo usuário logado (acompanhamento).
+            ============================================================== -->
             <div id="caixaSaidaPage" class="page-content">
                 <div class="page-header">
-                    <h1 class="page-title">Caixa de Saída</h1>
+                    <h1 class="page-title">Finalizados</h1>
                 </div>
 
-                <!-- Filtros -->
+                <!-- Filtros de busca -->
                 <div class="filters-container">
                     <div class="filter-group">
                         <input type="text" class="filter-input" id="filtroSaidaNumero"
@@ -242,19 +288,28 @@
                     </div>
                 </div>
 
-                <!-- Cards de Chamados -->
-                <div class="tickets-grid" id="ticketsSaidaGrid">
-                    <!-- Cards serão inseridos aqui via JavaScript -->
-                </div>
+                <!-- Grade de cards — preenchida via JavaScript -->
+                <div class="tickets-grid" id="ticketsSaidaGrid"></div>
             </div>
-        </div>
-    </main>
 
-    <!-- Tela de Novo Chamado -->
+        </div>
+        <!-- /ÁREA DE CONTEÚDO -->
+
+    </main>
+    <!-- /CONTEÚDO PRINCIPAL -->
+
+
+    <!-- =====================================================================
+         TELA SOBREPOSTA: NOVO CHAMADO
+         Painel que cobre o conteúdo principal ao criar um chamado.
+         Ativado via JavaScript (classe .active) ao clicar em "Novo Chamado".
+    ====================================================================== -->
     <div class="new-ticket-screen" id="newTicketScreen">
+
+        <!-- Cabeçalho fixo com botão voltar e título -->
         <div class="ticket-header">
             <div class="ticket-header-left">
-                <button class="back-btn" id="btnVoltar">
+                <button class="back-btn" id="btnVoltar" aria-label="Voltar para a lista">
                     <svg viewBox="0 0 24 24">
                         <line x1="19" y1="12" x2="5" y2="12"></line>
                         <polyline points="12 19 5 12 12 5"></polyline>
@@ -264,11 +319,13 @@
             </div>
         </div>
 
+        <!-- Formulário de criação de chamado -->
         <div class="ticket-form-container">
             <div class="ticket-form-card">
                 <form id="newTicketForm">
                     <div class="form-grid">
-                        <!-- Tipo de Chamado -->
+
+                        <!-- CAMPO: TIPO DE CHAMADO -->
                         <div class="form-group">
                             <label class="form-label required">Tipo de Chamado</label>
                             <select class="form-select" id="ticketType" required>
@@ -279,10 +336,14 @@
                             </select>
                         </div>
 
-                        <!-- Campos de Manutenção -->
+                        <!-- =====================================================
+                             SEÇÃO: MANUTENÇÃO
+                             Oculta por padrão; exibida quando tipo = "manutencao".
+                        ====================================================== -->
                         <div class="ticket-fields hidden" id="manutencaoFields">
                             <h3 class="section-title">Detalhes da Manutenção</h3>
 
+                            <!-- Linha com Unidade e Local lado a lado -->
                             <div class="form-row-2">
                                 <div class="form-group">
                                     <label class="form-label required">Unidade</label>
@@ -313,11 +374,70 @@
                                 </div>
                             </div>
 
+                            <!-- Campo extra: especificar local (exibido quando Local = "OUTRO") -->
                             <div class="form-group hidden" id="localOutroGroup">
                                 <label class="form-label required">Especifique o Local</label>
                                 <input type="text" class="form-input" id="localOutro" placeholder="Digite o local">
                             </div>
 
+                            <!-- =====================================================
+                                 CAMPO: SOLICITANTE (busca de usuário com autocomplete)
+                                 O dropdown de sugestões e a lógica de seleção são
+                                 gerenciados por js/user-search.js.
+                                 O ID do usuário selecionado fica em #solicitanteId (hidden).
+                            ====================================================== -->
+                            <div class="form-group">
+                                <label class="form-label required">Solicitante</label>
+                                <div class="user-search-wrapper">
+                                    <div class="user-search-input-wrapper">
+                                        <!-- Ícone de lupa (estilizado em 06-user-search.css) -->
+                                        <svg class="search-icon" viewBox="0 0 24 24">
+                                            <circle cx="11" cy="11" r="8"></circle>
+                                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                        </svg>
+                                        <input
+                                            type="text"
+                                            class="user-search-input"
+                                            id="solicitanteSearch"
+                                            placeholder="Pesquisar por nome ou matrícula..."
+                                            autocomplete="off"
+                                        >
+                                    </div>
+                                    <!-- Dropdown de sugestões (preenchido via js/user-search.js) -->
+                                    <div class="user-search-dropdown" id="solicitanteDropdown" role="listbox"></div>
+                                    <!-- Chip exibido após seleção do usuário -->
+                                    <div class="user-selected-chip" id="solicitanteChip">
+                                        <div class="chip-avatar" id="solicitanteChipAvatar">--</div>
+                                        <span class="chip-name" id="solicitanteChipName"></span>
+                                        <button type="button" class="chip-remove" id="solicitanteChipRemove" aria-label="Remover seleção">
+                                            <svg viewBox="0 0 24 24">
+                                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <!-- Campo oculto que armazena o ID do usuário selecionado -->
+                                    <input type="hidden" id="solicitanteId" name="solicitanteId">
+                                </div>
+                            </div>
+
+                            <!-- =====================================================
+                                 CAMPO: E-MAIL DO SOLICITANTE
+                                 Campo livre para digitação do e-mail de contato.
+                            ====================================================== -->
+                            <div class="form-group">
+                                <label class="form-label required">E-mail do Solicitante</label>
+                                <input
+                                    type="email"
+                                    class="form-input"
+                                    id="emailSolicitante"
+                                    name="emailSolicitante"
+                                    placeholder="exemplo@empresa.com.br"
+                                    autocomplete="email"
+                                >
+                            </div>
+
+                            <!-- Checkboxes: tipo de manutenção (múltipla seleção) -->
                             <div class="form-group">
                                 <label class="form-label required">Tipo de Manutenção (Selecione uma ou mais)</label>
                                 <div class="tipo-manutencao-checkboxes">
@@ -348,24 +468,28 @@
                                 </div>
                             </div>
 
+                            <!-- Campo extra: especificar tipo (exibido quando "Outro" está marcado) -->
                             <div class="form-group hidden" id="tipoManutencaoOutroGroup">
                                 <label class="form-label required">Especifique o Tipo de Manutenção</label>
                                 <input type="text" class="form-input" id="tipoManutencaoOutro"
                                     placeholder="Digite o tipo de manutenção">
                             </div>
 
+                            <!-- Título do chamado -->
                             <div class="form-group">
                                 <label class="form-label required">Título</label>
                                 <input type="text" class="form-input" id="tituloManutencao"
                                     placeholder="Breve descrição do problema">
                             </div>
 
+                            <!-- Observação detalhada -->
                             <div class="form-group">
                                 <label class="form-label required">Observação Detalhada</label>
                                 <textarea class="form-textarea" id="observacaoManutencao"
                                     placeholder="Descreva detalhadamente o problema..."></textarea>
                             </div>
 
+                            <!-- Upload de foto (opcional) -->
                             <div class="form-group">
                                 <label class="form-label">Foto (Opcional)</label>
                                 <div class="file-upload">
@@ -382,8 +506,12 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- /SEÇÃO MANUTENÇÃO -->
 
-                        <!-- Campos de Pedido Anual -->
+                        <!-- =====================================================
+                             SEÇÃO: PEDIDO ANUAL
+                             Oculta por padrão; exibida quando tipo = "pedido_anual".
+                        ====================================================== -->
                         <div class="ticket-fields hidden" id="pedidoAnualFields">
                             <h3 class="section-title">Detalhes do Pedido Anual</h3>
 
@@ -422,8 +550,12 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- /SEÇÃO PEDIDO ANUAL -->
 
-                        <!-- Campos de Pedido Avulso -->
+                        <!-- =====================================================
+                             SEÇÃO: PEDIDO AVULSO
+                             Oculta por padrão; exibida quando tipo = "pedido_avulso".
+                        ====================================================== -->
                         <div class="ticket-fields hidden" id="pedidoAvulsoFields">
                             <h3 class="section-title">Detalhes do Pedido Avulso</h3>
 
@@ -472,31 +604,43 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
+                        <!-- /SEÇÃO PEDIDO AVULSO -->
 
-                    <!-- Botões de Ação -->
+                    </div>
+                    <!-- /form-grid -->
+
+                    <!-- Botões de ação do formulário -->
                     <div class="form-actions">
                         <button type="button" class="btn-cancel" id="btnCancelar">Cancelar</button>
                         <button type="submit" class="btn-submit">Criar Chamado</button>
                     </div>
+
                 </form>
             </div>
         </div>
-    </div>
 
-    <!-- ==================== TELA DE DETALHES DO CHAMADO ==================== -->
+    </div>
+    <!-- /TELA NOVO CHAMADO -->
+
+
+    <!-- =====================================================================
+         TELA SOBREPOSTA: DETALHES DO CHAMADO
+         Desliza da direita para a esquerda ao selecionar um card.
+         Ativada via JavaScript (classe .active).
+    ====================================================================== -->
     <div class="chamado-detalhes-screen" id="ticketDetailsScreen">
 
-        <!-- Cabeçalho -->
         <div class="chamado-detalhes-header">
             <div class="chamado-detalhes-header-left">
-                <button class="chamado-voltar-btn" id="btnVoltarDetalhes">
+
+                <button class="chamado-voltar-btn" id="btnVoltarDetalhes" aria-label="Voltar para a lista">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
                         stroke-linejoin="round">
                         <polyline points="15 18 9 12 15 6"></polyline>
                     </svg>
                     Voltar
                 </button>
+
                 <div class="chamado-detalhes-titulo-wrapper">
                     <div class="chamado-detalhes-top">
                         <h2 class="chamado-detalhes-numero" id="detailsTicketNumber">#20260001</h2>
@@ -505,32 +649,14 @@
                     <p class="chamado-detalhes-titulo" id="detailsTicketTitle">Título do Chamado</p>
                 </div>
             </div>
-            <div class="chamado-detalhes-header-right">
-                <div class="chamado-meta-pill">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                    <span id="detailsDataAbertura">-</span>
-                </div>
-                <div class="chamado-meta-pill">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                    <span id="detailsAbertoPor">-</span>
-                </div>
-            </div>
         </div>
 
-        <!-- Barra de Progresso das Etapas -->
         <div class="chamado-progresso-wrapper">
             <div class="chamado-progresso-scroll">
                 <div class="chamado-progresso-linha" id="progressoLinha"></div>
             </div>
         </div>
 
-        <!-- Painel da Etapa Atual -->
         <div class="chamado-etapa-atual-panel" id="etapaAtualPanel">
             <div class="chamado-etapa-atual-info">
                 <div class="chamado-etapa-atual-icone" id="etapaAtualIcone">2</div>
@@ -542,14 +668,16 @@
                     </p>
                 </div>
             </div>
-            <div id="etapaAtualPermissao" class="chamado-etapa-sem-permissao">Sem permissão para atender esta etapa
+            <div id="etapaAtualPermissao" class="chamado-etapa-sem-permissao">
+                Sem permissão para atender esta etapa
             </div>
         </div>
 
-        <!-- Abas: Mensagens / Formulário / Anexos -->
         <div class="chamado-abas-wrapper">
-            <div class="chamado-abas-nav">
-                <button class="chamado-aba-btn active" data-aba="mensagens">
+
+            <div class="chamado-abas-nav" role="tablist">
+
+                <button class="chamado-aba-btn active" data-aba="mensagens" role="tab" aria-selected="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
@@ -557,7 +685,8 @@
                     Mensagens
                     <span class="chamado-aba-badge" id="badgeMensagens">0</span>
                 </button>
-                <button class="chamado-aba-btn" data-aba="formulario">
+
+                <button class="chamado-aba-btn" data-aba="formulario" role="tab" aria-selected="false">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -567,7 +696,8 @@
                     </svg>
                     Formulário
                 </button>
-                <button class="chamado-aba-btn" data-aba="anexos">
+
+                <button class="chamado-aba-btn" data-aba="anexos" role="tab" aria-selected="false">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round">
                         <path
@@ -578,22 +708,15 @@
                 </button>
             </div>
 
-            <!-- Aba Mensagens -->
-            <div class="chamado-aba-conteudo active" id="aba-mensagens">
-                <div class="chamado-mensagens-lista" id="historyMessages">
-                    <!-- mensagens inseridas via JS -->
-                </div>
+            <div class="chamado-aba-conteudo active" id="aba-mensagens" role="tabpanel">
+                <div class="chamado-mensagens-lista" id="historyMessages"></div>
             </div>
 
-            <!-- Aba Formulário -->
-            <div class="chamado-aba-conteudo" id="aba-formulario">
-                <div id="chamadoFormularioContainer">
-                    <!-- formulário da etapa atual inserido via JS -->
-                </div>
+            <div class="chamado-aba-conteudo" id="aba-formulario" role="tabpanel">
+                <div id="chamadoFormularioContainer"></div>
             </div>
 
-            <!-- Aba Anexos -->
-            <div class="chamado-aba-conteudo" id="aba-anexos">
+            <div class="chamado-aba-conteudo" id="aba-anexos" role="tabpanel">
                 <div class="chamado-anexos-lista" id="chamadoAnexosLista">
                     <div class="chamado-sem-anexos">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
@@ -606,13 +729,20 @@
                     </div>
                 </div>
             </div>
+
         </div>
+        <!-- /ABAS -->
 
     </div>
+    <!-- /TELA DETALHES DO CHAMADO -->
 
-    <script src="js/script.js"></script>
+
+    <!-- Scripts (carregados no final para não bloquear a renderização) -->
     <script src="js/fluxo-chamados.js"></script>
     <script src="js/renderizador-etapas.js"></script>
+    <script src="js/user-search.js"></script>
+    <script src="js/script.js"></script>
+    <script src="js/user-search.js"></script>
 
 </body>
 
