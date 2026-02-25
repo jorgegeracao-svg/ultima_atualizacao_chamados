@@ -240,7 +240,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            // Salvar sessão
+            // Salvar sessão (limpa sessão anterior primeiro)
+            localStorage.removeItem('currentUser');
             Storage.setCurrentUserLogin(user.usuario);
             if (rememberMe) localStorage.setItem('rememberMe', 'true');
 

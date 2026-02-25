@@ -195,11 +195,19 @@
     border-radius: var(--radius-md);
     width: fit-content;
     max-width: 100%;
+    position: relative;        /* Garante que fique acima do input-wrapper */
+    z-index: 2;
 }
 
 /* Exibido quando a classe .visible é adicionada via JavaScript */
 .user-selected-chip.visible {
     display: inline-flex;
+}
+
+/* Quando o chip está visível, garante que o input-wrapper não sobreponha */
+.user-search-input-wrapper {
+    position: relative;
+    z-index: 1;
 }
 
 /* Círculo com as iniciais (dentro do chip) */

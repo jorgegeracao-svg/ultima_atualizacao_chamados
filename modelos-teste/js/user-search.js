@@ -103,19 +103,22 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // -------------------------------------------------------------------------
-    // Selecionar um usuário: preenche o chip e esconde o input de busca
+    // Selecionar um usuário: preenche o chip e esconde o input-wrapper inteiro
     // -------------------------------------------------------------------------
     function selecionarUsuario(user) {
         if (!chip || !chipAvatar || !chipName || !hiddenId || !searchInput) return;
 
         const iniciais = gerarIniciais(user.nomeCompleto);
 
-        hiddenId.value       = user.id;
+        hiddenId.value         = user.id;
         chipAvatar.textContent = iniciais;
         chipName.textContent   = user.nomeCompleto;
 
         chip.classList.add('visible');
-        searchInput.style.display = 'none';
+
+        // Oculta o wrapper inteiro (lupa + input) para não vazar atrás do chip
+        const inputWrapper = searchInput.closest('.user-search-input-wrapper');
+        if (inputWrapper) inputWrapper.style.display = 'none';
 
         fecharDropdown();
     }
@@ -128,7 +131,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         hiddenId.value = '';
         chip.classList.remove('visible');
-        searchInput.style.display = '';
+
+        // Restaura o wrapper com lupa + input
+        const inputWrapper = searchInput.closest('.user-search-input-wrapper');
+        if (inputWrapper) inputWrapper.style.display = '';
+
         searchInput.value = '';
         searchInput.focus();
     }

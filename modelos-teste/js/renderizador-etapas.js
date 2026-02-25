@@ -1,5 +1,20 @@
 // ==================== RENDERIZADOR DE ETAPAS ==================== //
 
+// Converte arquivos de um <input type="file"> para base64.
+// Retorna Promise com array de { nome, tipo, tamanho, dados } ou [] se vazio.
+function lerArquivosBase64(fileInput) {
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        return Promise.resolve([]);
+    }
+    const promessas = Array.from(fileInput.files).map(file => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload  = e => resolve({ nome: file.name, tipo: file.type, tamanho: file.size, dados: e.target.result });
+        reader.onerror = () => reject(new Error('Erro ao ler: ' + file.name));
+        reader.readAsDataURL(file);
+    }));
+    return Promise.all(promessas);
+}
+
 class RenderizadorEtapas {
     constructor(containerId, chamado, usuario) {
         this.container = document.getElementById(containerId);
@@ -514,10 +529,13 @@ class RenderizadorEtapas {
                         const fornecedor   = document.getElementById('fornecedorPedido').value;
                         const valorTotal   = document.getElementById('valorTotalPedido').value;
                         const observacao   = document.getElementById('observacaoPedido').value;
+                        const fileInput    = document.getElementById('anexoPedido');
                         if (fornecedor && valorTotal) {
-                            this.chamado.concluirSubetapa52(numeroPedido, fornecedor, [], valorTotal, observacao, null, this.usuario);
-                            window.gerenciadorChamados.atualizarChamado(this.chamado);
-                            this.render();
+                            lerArquivosBase64(fileInput).then(anexos => {
+                                this.chamado.concluirSubetapa52(numeroPedido, fornecedor, [], valorTotal, observacao, anexos, this.usuario);
+                                window.gerenciadorChamados.atualizarChamado(this.chamado);
+                                this.render();
+                            });
                         }
                     });
                 }
@@ -668,10 +686,13 @@ class RenderizadorEtapas {
                         const dataRecebimento = document.getElementById('dataRecebimento').value;
                         const numeroNF        = document.getElementById('numeroNF').value;
                         const observacao      = document.getElementById('observacaoRecebimento').value;
+                        const fileInput       = document.getElementById('fotosRecebimento');
                         if (dataRecebimento) {
-                            this.chamado.concluirEtapa6(dataRecebimento, numeroNF, observacao, null, this.usuario);
-                            window.gerenciadorChamados.atualizarChamado(this.chamado);
-                            this.render();
+                            lerArquivosBase64(fileInput).then(fotos => {
+                                this.chamado.concluirEtapa6(dataRecebimento, numeroNF, observacao, fotos, this.usuario);
+                                window.gerenciadorChamados.atualizarChamado(this.chamado);
+                                this.render();
+                            });
                         }
                     });
                 }
@@ -807,10 +828,13 @@ class RenderizadorEtapas {
                         e.preventDefault();
                         const descricao = document.getElementById('descricaoServico').value;
                         const materiais = document.getElementById('materiaisUsados').value;
+                        const fileInput = document.getElementById('fotosExecucao');
                         if (descricao) {
-                            this.chamado.concluirEtapa8(descricao, materiais, null, this.usuario);
-                            window.gerenciadorChamados.atualizarChamado(this.chamado);
-                            this.render();
+                            lerArquivosBase64(fileInput).then(fotos => {
+                                this.chamado.concluirEtapa8(descricao, materiais, fotos, this.usuario);
+                                window.gerenciadorChamados.atualizarChamado(this.chamado);
+                                this.render();
+                            });
                         }
                     });
                 }

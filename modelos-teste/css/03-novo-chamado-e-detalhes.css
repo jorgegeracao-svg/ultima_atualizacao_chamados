@@ -354,68 +354,17 @@
     flex-direction: column;
     overflow: hidden;
 
-    /* Estado inicial: invisível e deslocado para a direita */
-    transform: translateX(100%);
-    opacity: 0;
-    pointer-events: none;
-    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-                opacity   0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Estado inicial: oculto */
+    display: none;
 }
 
-/* Estado ativo: visível e na posição correta */
+/* Estado ativo: visível imediatamente */
 .chamado-detalhes-screen.active {
-    transform: translateX(0);
-    opacity: 1;
-    pointer-events: all;
+    display: flex;
 }
 
 /* --- CABEÇALHO DA TELA DE DETALHES --- */
-.chamado-detalhes-header {
-    background: white;
-    padding: 14px 28px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--color-gray-200);
-    flex-shrink: 0;  /* Não comprime quando o conteúdo cresce */
-    gap: 20px;
-}
-
-.chamado-detalhes-header-left {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    min-width: 0;
-}
-
-/* Botão "← Voltar" */
-.chamado-voltar-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
-    background: var(--color-gray-100);
-    border: 1px solid var(--color-gray-200);
-    border-radius: var(--radius-md);
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--color-gray-700);
-    cursor: pointer;
-    transition: background 0.2s, border-color 0.2s;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-.chamado-voltar-btn:hover {
-    background: var(--color-gray-200);
-    border-color: var(--color-gray-300);
-}
-
-.chamado-voltar-btn svg {
-    width: 16px;
-    height: 16px;
-    stroke: var(--color-gray-700);
-}
+/* Header base — layout definido na seção abaixo junto com novos estilos */
 
 .chamado-detalhes-titulo-wrapper { min-width: 0; }
 
@@ -495,16 +444,130 @@
 /* --- BARRA DE PROGRESSO DE ETAPAS ---
    Linha horizontal com círculos numerados e conectores entre etapas.       */
 .chamado-progresso-wrapper {
-    background: white;
+    background: var(--color-gray-100);
     border-bottom: 1px solid var(--color-gray-200);
-    padding: 16px 28px;
     flex-shrink: 0;
+}
+
+/* --- INFO BAR (usuário | título | número) --- */
+.chamado-info-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 28px;
+    gap: 16px;
+}
+
+/* Esquerda: avatar circular + nome */
+.chamado-info-usuario {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
+}
+
+.chamado-info-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-mid) 100%);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    letter-spacing: 0.5px;
+}
+
+.chamado-info-nome {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-gray-700);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Centro: título do chamado */
+.chamado-info-titulo-wrapper {
+    flex: 2;
+    text-align: center;
+    min-width: 0;
+    padding: 0 12px;
+}
+
+.chamado-info-titulo {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Direita: número + botão copiar */
+.chamado-info-numero-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    justify-content: flex-end;
+}
+
+.chamado-info-numero {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.3px;
+}
+
+.chamado-info-copiar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: var(--color-gray-100);
+    color: var(--color-gray-500);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+}
+
+.chamado-info-copiar svg {
+    width: 14px;
+    height: 14px;
+}
+
+.chamado-info-copiar:hover {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+}
+
+.chamado-info-copiar.copiado {
+    background: var(--color-success-light);
+    color: var(--color-success);
+}
+
+/* Divisor entre info-bar e bolinhas */
+.chamado-info-divider {
+    height: 1px;
+    background: var(--color-gray-200);
+    margin: 0 28px;
 }
 
 /* Scroll horizontal quando há muitas etapas */
 .chamado-progresso-scroll {
     overflow-x: auto;
-    padding-bottom: 4px;
+    padding: 16px 28px;
+    display: flex;
+    justify-content: center;
 }
 
 .chamado-progresso-scroll::-webkit-scrollbar { height: 3px; }
@@ -807,7 +870,13 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
-    max-width: 860px;
+    width: 100%;
+}
+
+/* Card da etapa ativa — destaque com borda azul */
+.msg-card-ativo {
+    border-color: var(--color-primary) !important;
+    box-shadow: 0 0 0 1px var(--color-primary), 0 2px 8px rgba(0,149,219,0.1) !important;
 }
 
 /* Card individual de mensagem */
@@ -834,6 +903,7 @@
     cursor: pointer;
     user-select: none;
     transition: background 0.15s;
+    justify-content: space-between; /* Nome da etapa à esquerda, seta à direita */
 }
 
 .chamado-mensagem-header-toggle:hover { background: #f0f4f8; }
@@ -854,6 +924,113 @@
     color: var(--color-gray-400);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+}
+
+/* Nome da etapa exibido no header colapsado */
+.msg-etapa-titulo {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-gray-700);
+    flex: 1;
+}
+
+/* Botão de toggle (seta) alinhado à direita */
+.msg-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+    padding: 0;
+    transition: background 0.15s;
+}
+
+.msg-toggle-btn:hover {
+    background: var(--color-gray-200);
+}
+
+/* --- TIMELINE (bolinha + conector vertical) --- */
+.msg-timeline-item {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+}
+
+/* O card dentro do item de timeline deve ocupar todo o espaço restante */
+.msg-timeline-item > .chamado-mensagem-card {
+    flex: 1;
+    min-width: 0;
+}
+
+.msg-timeline-coluna {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    padding-top: 12px;
+}
+
+.msg-timeline-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--color-gray-200);
+    color: var(--color-gray-500);
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.msg-timeline-dot--ativo {
+    background: var(--color-primary);
+    color: white;
+}
+
+.msg-timeline-conector {
+    width: 2px;
+    flex: 1;
+    min-height: 20px;
+    background: var(--color-gray-200);
+    margin-top: 6px;
+}
+
+.msg-timeline-conector--ativo {
+    background: var(--color-primary-light);
+}
+
+/* Cartão expandido: a coluna de timeline fica invisível no último item */
+.msg-timeline-item:last-child .msg-timeline-conector {
+    display: none;
+}
+
+/* --- BLOCO DO AUTOR NO BODY (exibido ao expandir o card) --- */
+.msg-header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+}
+
+.msg-header-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.msg-header-sub {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 /* Badge de perfil do autor (solicitante, técnico, etc.) */
@@ -899,12 +1076,22 @@
     opacity: 0;
 }
 
-/* Autor da mensagem com avatar */
+/* Autor da mensagem com avatar (versão legada) */
 .chamado-mensagem-autor {
     display: flex;
     align-items: center;
     gap: 8px;
     margin-bottom: 10px;
+}
+
+/* Bloco do autor exibido no topo do body expandido (versão nova) */
+.msg-body-autor {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--color-gray-100);
 }
 
 /* Círculo com iniciais do autor */
@@ -1047,8 +1234,8 @@
     .info-row { grid-template-columns: 1fr; gap: 12px; }
 
     /* Cabeçalho de detalhes */
-    .chamado-detalhes-header { padding: 12px 16px; flex-wrap: wrap; }
-    .chamado-detalhes-header-right { display: none; } /* Oculta pills no mobile */
+    .chamado-detalhes-header { padding: 8px 12px; }
+    /* Mantém o lado direito visível pois tem botões essenciais */
 
     .chamado-progresso-wrapper { padding: 12px 16px; }
 
@@ -1078,10 +1265,10 @@
 
 
 /* ==========================================================================
-   SIDEBAR RECOLHIDA — ao abrir tela de detalhes do chamado
+   SIDEBAR RECOLHIDA — toggle manual pelo botão do header de detalhes
    ========================================================================== */
 
-/* Sidebar desliza para fora da tela pela esquerda */
+/* Sidebar desliza para fora quando recolhida manualmente */
 .sidebar.sidebar-hidden {
     transform: translateX(-100%);
 }
@@ -1089,4 +1276,183 @@
 /* Tela de detalhes expande para ocupar a tela toda (sem a sidebar) */
 .chamado-detalhes-screen.fullscreen {
     left: 0;
+}
+
+
+/* ==========================================================================
+   HEADER DE DETALHES — novo layout com ações globais
+   ========================================================================== */
+
+/* Wrapper principal do header */
+.chamado-detalhes-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 20px;
+    height: 64px;
+    background: var(--color-primary);
+    border-bottom: none;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    flex-shrink: 0;
+}
+
+/* Lado esquerdo: toggle + info do chamado */
+.chamado-detalhes-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    flex: 1;
+}
+
+/* Lado direito: busca + notif + voltar */
+.chamado-detalhes-header-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+/* Botão genérico do header (toggle, busca, notif, voltar) */
+.det-header-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.85);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.det-header-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+.det-header-btn:hover {
+    background: rgba(255,255,255,0.15);
+    color: white;
+}
+
+.det-header-btn:active {
+    background: rgba(255,255,255,0.25);
+    transform: scale(0.95);
+}
+
+/* Botão voltar — sem destaque especial (já está no azul) */
+.det-back-btn {
+    color: var(--color-gray-500);
+}
+
+.det-back-btn:hover {
+    background: var(--color-gray-200);
+    color: white;
+}
+
+/* Notificação — badge vermelho */
+.det-notif-badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    background: var(--color-danger);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+/* Wrapper do campo de busca expansível */
+.det-search-wrapper {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+/* Campo de busca — oculto por padrão, expande com animação */
+.det-search-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-width 0.3s ease, opacity 0.3s ease, margin 0.3s ease;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+/* Estado ativo — campo expande */
+.det-search-wrapper.active .det-search-field {
+    max-width: 380px;
+    opacity: 1;
+    margin-left: 6px;
+    border-color: rgba(255,255,255,0.6);
+    background: rgba(255,255,255,0.18);
+    padding: 0 12px;
+}
+
+.det-search-field input {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 14px;
+    color: white;
+    width: 300px;
+    padding: 8px 0;
+    font-family: inherit;
+}
+
+.det-search-field input::placeholder {
+    color: rgba(255,255,255,0.55);
+}
+
+.det-search-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.7);
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.det-search-close svg {
+    width: 15px;
+    height: 15px;
+}
+
+.det-search-close:hover {
+    color: white;
+}
+
+/* Responsivo */
+@media (max-width: 600px) {
+    .det-search-wrapper.active .det-search-field {
+        max-width: 200px;
+    }
+
+    .det-search-field input {
+        width: 150px;
+    }
 }

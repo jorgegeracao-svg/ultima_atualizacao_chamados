@@ -29,9 +29,9 @@ function checkAuth() {
                         window.location.pathname === '/' ||
                         window.location.pathname.endsWith('/');
 
-    // Na tela de login: se já logado, redireciona para o sistema
+    // Na tela de login: sempre permanece no login (não redireciona automaticamente)
+    // O usuário deve fazer login manualmente a cada acesso.
     if (naLoginPage) {
-        if (currentUser) window.location.href = 'index.html';
         return null;
     }
 

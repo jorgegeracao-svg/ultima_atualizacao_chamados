@@ -367,12 +367,58 @@ body {
 /* Cabeçalho da página (título) */
 .page-header {
     margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
 }
 
 .page-title {
     font-size: 32px;
     font-weight: 700;
     color: var(--color-gray-900);
+}
+
+/* Toggle lista/grade */
+.view-toggle {
+    display: flex;
+    align-items: center;
+    background: var(--color-gray-100);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.view-toggle-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, box-shadow 0.15s;
+    color: var(--color-gray-400);
+}
+
+.view-toggle-btn svg {
+    width: 15px;
+    height: 15px;
+    stroke: currentColor;
+    transition: stroke 0.15s;
+}
+
+.view-toggle-btn.active {
+    background: #fff;
+    color: var(--color-primary);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+.view-toggle-btn:hover:not(.active) {
+    color: var(--color-gray-600);
 }
 
 /* Container genérico de tabela/listagem com fundo branco */
@@ -435,101 +481,263 @@ body {
    Layout responsivo com colunas automáticas de no mínimo 350px.
    ========================================================================== */
 .tickets-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Modo grade */
+.tickets-grid.modo-grade {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 20px;
 }
 
-/* Mensagem quando não há chamados para exibir */
-.no-tickets {
-    grid-column: 1 / -1;      /* Ocupa toda a largura da grade */
+/* Mensagem quando não há chamados */
+.no-tickets-wrapper {
     text-align: center;
     padding: 60px 20px;
     color: var(--color-gray-500);
     font-size: 15px;
 }
 
+.no-tickets-wrapper svg {
+    width: 40px;
+    height: 40px;
+    display: block;
+    margin: 0 auto 12px;
+}
+
 
 /* ==========================================================================
-   CARD DE CHAMADO
-   Card clicável com informações resumidas do chamado.
+   CARD — MODELO 3 (dois andares: topo + base)
    ========================================================================== */
 .ticket-card {
     background: white;
-    border-radius: var(--radius-lg);
-    padding: 20px;
-    box-shadow: var(--shadow-sm);
-    cursor: pointer;
-    transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+    border-radius: var(--radius-md);
     border: 1px solid var(--color-gray-200);
+    box-shadow: var(--shadow-sm);
+    cursor: default;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-/* Hover: eleva o card e destaca a borda com o azul primário */
 .ticket-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transform: translateY(-2px);
-    border-color: var(--color-primary);
+    border-color: #93d4f5;
+    box-shadow: 0 4px 14px rgba(0, 149, 219, 0.11);
 }
 
-/* --- CABEÇALHO DO CARD (badge de tipo + número) --- */
-.ticket-card-header {
+/* ---- TOPO: número + título + status + seta ---- */
+.tc-topo {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    gap: 12px;
+    padding: 20px 16px 20px;
+    border-bottom: 1px solid var(--color-gray-100);
 }
 
-/* Badge colorido indicando o tipo do chamado */
-.ticket-type-badge {
-    padding: 6px 12px;
-    border-radius: var(--radius-sm);
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-/* Cores por tipo de chamado */
-.ticket-type-badge.tipo-manutencao     { background: #fef3c7; color: #92400e; } /* Amarelo */
-.ticket-type-badge.tipo-pedido_anual   { background: #dbeafe; color: #1e40af; } /* Azul */
-.ticket-type-badge.tipo-pedido_avulso  { background: #d1fae5; color: #065f46; } /* Verde */
-
-/* Número identificador do chamado */
-.ticket-card-number {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--color-primary);
-}
-
-/* --- TÍTULO DO CHAMADO --- */
-.ticket-card-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--color-gray-900);
-    margin-bottom: 16px;
-    line-height: 1.4;
-}
-
-/* --- INFORMAÇÕES SECUNDÁRIAS (solicitante, local, data) --- */
-.ticket-card-info {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 16px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--color-gray-200);
-}
-
-.ticket-card-info .info-item {
+.tc-num-tag {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-shrink: 0;
+}
+
+/* Badge azul sólido com o número */
+.tc-numero {
     font-size: 13px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+    background: var(--color-primary);
+    padding: 5px 13px;
+    border-radius: 5px;
+    box-shadow: 0 2px 6px rgba(0, 149, 219, 0.3);
+}
+
+/* Separador bolinha */
+.tc-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--color-gray-300);
+    flex-shrink: 0;
+}
+
+/* Badge tipo (manutenção, pedido…) */
+.ticket-type-badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+}
+
+.ticket-type-badge.tipo-manutencao    { background: #fef3c7; color: #92400e; }
+.ticket-type-badge.tipo-pedido_anual  { background: #dbeafe; color: #1e40af; }
+.ticket-type-badge.tipo-pedido_avulso { background: #d1fae5; color: #065f46; }
+
+/* Título — ocupa o espaço restante */
+.tc-titulo {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+/* Área direita: status + seta */
+.tc-status-area {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+/* Badge de status */
+.ticket-status-badge {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.badge-andamento  { background: #e0f4ff; color: #0077b6; }
+.badge-finalizado { background: #d1fae5; color: #065f46; }
+
+/* Botão seta */
+.ticket-card-arrow {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: var(--color-gray-100);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.ticket-card-arrow:hover { background: var(--color-primary); }
+.ticket-card-arrow:hover svg { stroke: #fff; }
+.ticket-card-arrow svg {
+    width: 14px;
+    height: 14px;
+    stroke: var(--color-gray-400);
+    fill: none;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: stroke 0.2s;
+}
+
+/* ---- BASE: metadados em grid 2 colunas ---- */
+.tc-base {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 24px;
+    padding: 14px 16px;
+    background: var(--color-gray-50);
+    border-top: 1px solid var(--color-gray-200);
+}
+
+.tc-base-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
     color: var(--color-gray-500);
 }
 
-/* Ícone de cada item de informação */
-.info-icon {
+.tc-base-item svg {
+    width: 13px;
+    height: 13px;
+    stroke: var(--color-primary);
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+
+.tc-base-item strong {
+    color: var(--color-gray-700);
+    font-weight: 600;
+}
+
+.tc-lbl {
+    color: var(--color-gray-400);
+    margin-right: 2px;
+}
+
+
+/* ==========================================================================
+   CARD — MODO GRADE
+   ========================================================================== */
+.modo-grade .ticket-card {
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    cursor: pointer;
+}
+
+.modo-grade .ticket-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 149, 219, 0.13);
+    border-color: var(--color-primary);
+}
+
+/* Cabeçalho: badge tipo + número */
+.grade-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px 10px;
+}
+
+.grade-numero {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--color-primary);
+    letter-spacing: 0.3px;
+}
+
+/* Título do chamado */
+.grade-titulo {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    padding: 0 16px 14px;
+    line-height: 1.4;
+    margin: 0;
+}
+
+/* Linha de solicitante e data */
+.grade-solicitante {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    font-size: 13px;
+    color: var(--color-gray-500);
+    padding: 6px 16px;
+    text-align: center;
+}
+
+.grade-solicitante svg {
     width: 16px;
     height: 16px;
     stroke: var(--color-gray-400);
@@ -540,38 +748,149 @@ body {
     flex-shrink: 0;
 }
 
-/* --- RODAPÉ DO CARD (SLA e responsável) --- */
-.ticket-card-footer {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+.grade-solicitante strong {
+    color: var(--color-gray-700);
+    font-weight: 600;
 }
 
-.footer-item {
+/* Rodapé: etapa + responsável */
+.grade-footer {
+    margin-top: auto;
+    padding: 12px 16px;
+    border-top: 1px solid var(--color-gray-100);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.grade-footer-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-size: 13px;
+    gap: 8px;
 }
 
-.footer-label {
-    color: var(--color-gray-500);
+.grade-footer-label {
+    color: var(--color-gray-400);
     font-weight: 500;
+    white-space: nowrap;
 }
 
-.footer-value {
-    color: var(--color-gray-900);
+.grade-footer-value {
+    color: var(--color-gray-700);
     font-weight: 600;
+    text-align: right;
 }
 
-/* Cores de SLA por urgência */
-.sla-no-prazo          { color: #059669 !important; }  /* Verde — dentro do prazo */
-.sla-atrasado          { color: #dc2626 !important; }  /* Vermelho — atrasado */
-.sla-proximo-do-prazo  { color: #f59e0b !important; }  /* Amarelo — próximo do limite */
+/* Status + seta — compatibilidade legada */
+.ticket-card-bottom {
+    display: contents;
+}
+
 
 
 /* ==========================================================================
-   RESPONSIVIDADE — TELA PRINCIPAL
+   CARD QUADRADO — novo design (classes tq-*)
+   ========================================================================== */
+
+.tcard-quadrado {
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.tq-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px 10px;
+}
+
+.tq-numero {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--color-primary);
+    letter-spacing: 0.3px;
+}
+
+.tq-titulo {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    padding: 4px 16px 16px;
+    line-height: 1.4;
+    margin: 0;
+}
+
+.tq-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px 16px;
+    flex: 1;
+}
+
+.tq-info-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--color-gray-500);
+    text-align: center;
+}
+
+.tq-info-item svg {
+    width: 18px;
+    height: 18px;
+    stroke: var(--color-gray-400);
+    flex-shrink: 0;
+}
+
+.tq-info-item strong {
+    color: var(--color-gray-700);
+    font-weight: 600;
+}
+
+.tq-footer {
+    margin-top: auto;
+    padding: 12px 16px;
+    border-top: 1px solid var(--color-gray-100);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.tq-footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    gap: 8px;
+}
+
+.tq-footer-label {
+    color: var(--color-gray-400);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.tq-footer-value {
+    color: var(--color-gray-700);
+    font-weight: 600;
+    text-align: right;
+}
+
+.tq-status-andamento { color: #0095db; }
+.tq-status-finalizado { color: #10b981; }
+
+/* ==========================================================================
+   RESPONSIVIDADE
    ========================================================================== */
 
 /* --- Tablet (≤ 1024px) --- */
@@ -579,9 +898,9 @@ body {
     .content { padding: 30px 24px; }
     .page-title { font-size: 28px; }
 
-    /* Cards menores */
-    .tickets-grid {
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    /* No modo grade reduz colunas em tablet */
+    .tickets-grid.modo-grade {
+        grid-template-columns: repeat(2, 1fr);
     }
 
     /* Filtros: busca em linha própria, status e tipo lado a lado */
@@ -590,42 +909,67 @@ body {
     }
 
     .filter-group:first-child {
-        grid-column: 1 / -1;     /* Campo de busca ocupa toda a largura */
+        grid-column: 1 / -1;
     }
 }
 
-/* --- Mobile (≤ 768px) ---
-   Sidebar se move para fora da tela; cabeçalho mobile aparece.            */
+/* --- Mobile (≤ 768px) --- */
 @media (max-width: 768px) {
-    /* Esconde a sidebar (visível via toggle) */
     .sidebar { transform: translateX(-100%); }
 
-    /* Abre a sidebar quando a classe .open é adicionada */
     .sidebar.open {
         transform: translateX(0);
         box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
     }
 
-    /* Conteúdo ocupa tela inteira sem margem da sidebar */
     .main-content { margin-left: 0; }
-
-    /* Exibe o cabeçalho mobile */
     .mobile-header { display: flex; }
 
     .content { padding: 20px 16px; }
     .page-title { font-size: 24px; }
     .table-container { padding: 16px; }
 
-    /* Filtros em coluna única */
     .filters-container {
         grid-template-columns: 1fr;
         padding: 16px;
     }
 
-    /* Cards em coluna única */
-    .tickets-grid {
+    /* Em mobile grade vira coluna única */
+    .tickets-grid.modo-grade {
         grid-template-columns: 1fr;
-        gap: 16px;
+        gap: 14px;
+    }
+
+    /* Em mobile — modelo 3: topo vira duas linhas */
+    .tc-topo {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 14px 12px;
+    }
+
+    /* Número + badge ficam na primeira linha */
+    .tc-num-tag { width: 100%; }
+
+    /* Separador entre num-tag e título some */
+    .tc-topo > .tc-dot { display: none; }
+
+    /* Título ocupa linha inteira e quebra normalmente */
+    .tc-titulo {
+        width: 100%;
+        white-space: normal;
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    /* Status + seta ficam à direita do num-tag */
+    .tc-num-tag { flex: 1; }
+    .tc-status-area { flex-shrink: 0; }
+
+    /* Base: grid vira coluna única no mobile */
+    .tc-base {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        padding: 10px 12px;
     }
 }
 

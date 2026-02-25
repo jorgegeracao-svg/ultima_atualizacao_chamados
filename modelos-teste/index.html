@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="css/03-novo-chamado-e-detalhes.css">
     <link rel="stylesheet" href="css/04-etapas.css">
     <link rel="stylesheet" href="css/06-user-search.css">
+    <link rel="stylesheet" href="css/05-modal-lembrete.css">
 
     <!-- Auth: verifica sessão antes de renderizar a página -->
     <script src="js/auth-integration.js"></script>
@@ -203,6 +204,25 @@
             <div id="caixaEntradaPage" class="page-content">
                 <div class="page-header">
                     <h1 class="page-title">Aguardando sua ação</h1>
+                    <div class="view-toggle" id="viewToggle" title="Alternar visualização">
+                        <button class="view-toggle-btn" data-view="lista" title="Visualização em lista">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                stroke-linecap="round">
+                                <line x1="3" y1="6" x2="21" y2="6" />
+                                <line x1="3" y1="12" x2="21" y2="12" />
+                                <line x1="3" y1="18" x2="21" y2="18" />
+                            </svg>
+                        </button>
+                        <button class="view-toggle-btn" data-view="grade" title="Visualização em grade">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                stroke-linecap="round">
+                                <rect x="3" y="3" width="7" height="7" />
+                                <rect x="14" y="3" width="7" height="7" />
+                                <rect x="3" y="14" width="7" height="7" />
+                                <rect x="14" y="14" width="7" height="7" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Filtros de busca -->
@@ -235,6 +255,25 @@
             <div id="caixaLogPage" class="page-content">
                 <div class="page-header">
                     <h1 class="page-title">Em andamento</h1>
+                    <div class="view-toggle" id="viewToggleLog">
+                        <button class="view-toggle-btn" data-view="lista" title="Visualização em lista">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                stroke-linecap="round">
+                                <line x1="3" y1="6" x2="21" y2="6" />
+                                <line x1="3" y1="12" x2="21" y2="12" />
+                                <line x1="3" y1="18" x2="21" y2="18" />
+                            </svg>
+                        </button>
+                        <button class="view-toggle-btn" data-view="grade" title="Visualização em grade">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                stroke-linecap="round">
+                                <rect x="3" y="3" width="7" height="7" />
+                                <rect x="14" y="3" width="7" height="7" />
+                                <rect x="3" y="14" width="7" height="7" />
+                                <rect x="14" y="14" width="7" height="7" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Filtros de busca -->
@@ -267,6 +306,25 @@
             <div id="caixaSaidaPage" class="page-content">
                 <div class="page-header">
                     <h1 class="page-title">Finalizados</h1>
+                    <div class="view-toggle" id="viewToggleSaida">
+                        <button class="view-toggle-btn" data-view="lista" title="Visualização em lista">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                stroke-linecap="round">
+                                <line x1="3" y1="6" x2="21" y2="6" />
+                                <line x1="3" y1="12" x2="21" y2="12" />
+                                <line x1="3" y1="18" x2="21" y2="18" />
+                            </svg>
+                        </button>
+                        <button class="view-toggle-btn" data-view="grade" title="Visualização em grade">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                stroke-linecap="round">
+                                <rect x="3" y="3" width="7" height="7" />
+                                <rect x="14" y="3" width="7" height="7" />
+                                <rect x="3" y="14" width="7" height="7" />
+                                <rect x="14" y="14" width="7" height="7" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Filtros de busca -->
@@ -395,13 +453,8 @@
                                             <circle cx="11" cy="11" r="8"></circle>
                                             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                         </svg>
-                                        <input
-                                            type="text"
-                                            class="user-search-input"
-                                            id="solicitanteSearch"
-                                            placeholder="Pesquisar por nome ou matrícula..."
-                                            autocomplete="off"
-                                        >
+                                        <input type="text" class="user-search-input" id="solicitanteSearch"
+                                            placeholder="Pesquisar por nome ou matrícula..." autocomplete="off">
                                     </div>
                                     <!-- Dropdown de sugestões (preenchido via js/user-search.js) -->
                                     <div class="user-search-dropdown" id="solicitanteDropdown" role="listbox"></div>
@@ -409,7 +462,8 @@
                                     <div class="user-selected-chip" id="solicitanteChip">
                                         <div class="chip-avatar" id="solicitanteChipAvatar">--</div>
                                         <span class="chip-name" id="solicitanteChipName"></span>
-                                        <button type="button" class="chip-remove" id="solicitanteChipRemove" aria-label="Remover seleção">
+                                        <button type="button" class="chip-remove" id="solicitanteChipRemove"
+                                            aria-label="Remover seleção">
                                             <svg viewBox="0 0 24 24">
                                                 <line x1="18" y1="6" x2="6" y2="18"></line>
                                                 <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -422,19 +476,21 @@
                             </div>
 
                             <!-- =====================================================
-                                 CAMPO: E-MAIL DO SOLICITANTE
-                                 Campo livre para digitação do e-mail de contato.
+                                 CAMPOS: E-MAIL E TELEFONE DO SOLICITANTE
+                                 Dois campos lado a lado para contato.
                             ====================================================== -->
-                            <div class="form-group">
-                                <label class="form-label required">E-mail do Solicitante</label>
-                                <input
-                                    type="email"
-                                    class="form-input"
-                                    id="emailSolicitante"
-                                    name="emailSolicitante"
-                                    placeholder="exemplo@empresa.com.br"
-                                    autocomplete="email"
-                                >
+                            <div class="form-row-2">
+                                <div class="form-group">
+                                    <label class="form-label required">E-mail do Solicitante</label>
+                                    <input type="email" class="form-input" id="emailSolicitante" name="emailSolicitante"
+                                        placeholder="exemplo@empresa.com.br" autocomplete="email">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Telefone para Contato</label>
+                                    <input type="tel" class="form-input" id="telefoneSolicitante"
+                                        name="telefoneSolicitante" placeholder="(00) 00000-0000" autocomplete="tel"
+                                        maxlength="15">
+                                </div>
                             </div>
 
                             <!-- Checkboxes: tipo de manutenção (múltipla seleção) -->
@@ -631,46 +687,107 @@
     <div class="chamado-detalhes-screen" id="ticketDetailsScreen">
 
         <div class="chamado-detalhes-header">
-            <div class="chamado-detalhes-header-left">
 
-                <button class="chamado-voltar-btn" id="btnVoltarDetalhes" aria-label="Voltar para a lista">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+            <!-- Lado esquerdo: toggle sidebar -->
+            <div class="chamado-detalhes-header-left">
+                <button class="det-header-btn" id="btnToggleSidebarDetalhes" aria-label="Mostrar/ocultar menu lateral"
+                    title="Mostrar/ocultar menu">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round">
-                        <polyline points="15 18 9 12 15 6"></polyline>
+                        <path d="M22 3H2v18h20V3z"/>
+                        <path d="M7 3v18"/>
+                        <path d="m15 9-3 3 3 3"/>
                     </svg>
-                    Voltar
+                </button>
+            </div>
+
+            <!-- Lado direito: busca + notificação + novo chamado -->
+            <div class="chamado-detalhes-header-right">
+
+                <!-- Botão busca (expande campo inline) -->
+                <div class="det-search-wrapper" id="detSearchWrapper">
+                    <button class="det-header-btn" id="btnToggleSearch" aria-label="Buscar chamado"
+                        title="Buscar chamado">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </button>
+                    <div class="det-search-field" id="detSearchField">
+                        <input type="text" id="detSearchInput" placeholder="Número ou nome do chamado..."
+                            autocomplete="off">
+                        <button class="det-search-close" id="btnCloseSearch" aria-label="Fechar busca">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Botão notificações -->
+                <button class="det-header-btn det-notif-btn" id="btnNotificacoes" aria-label="Notificações"
+                    title="Notificações">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    <span class="det-notif-badge hidden" id="notifBadge">0</span>
                 </button>
 
-                <div class="chamado-detalhes-titulo-wrapper">
-                    <div class="chamado-detalhes-top">
-                        <h2 class="chamado-detalhes-numero" id="detailsTicketNumber">#20260001</h2>
-                        <span class="chamado-detalhes-badge" id="detailsStatusBadge">Em andamento</span>
-                    </div>
-                    <p class="chamado-detalhes-titulo" id="detailsTicketTitle">Título do Chamado</p>
-                </div>
+                <!-- Botão voltar / novo chamado -->
+                <button class="det-header-btn det-back-btn" id="btnVoltarDetalhes" aria-label="Fechar"
+                    title="Fechar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+
             </div>
         </div>
 
         <div class="chamado-progresso-wrapper">
+
+            <!-- Barra de info: usuário | título | número -->
+            <div class="chamado-info-bar">
+
+                <!-- Esquerda: avatar + nome do solicitante -->
+                <div class="chamado-info-usuario">
+                    <div class="chamado-info-avatar" id="detailsAvatar">--</div>
+                    <span class="chamado-info-nome" id="detailsAbertoPor">—</span>
+                </div>
+
+                <!-- Centro: título do chamado -->
+                <div class="chamado-info-titulo-wrapper">
+                    <p class="chamado-info-titulo" id="detailsTicketTitle">—</p>
+                </div>
+
+                <!-- Direita: número + botão copiar -->
+                <div class="chamado-info-numero-wrapper">
+                    <span class="chamado-info-numero" id="detailsTicketNumber">#00000000</span>
+                    <button class="chamado-info-copiar" id="btnCopiarNumero" title="Copiar número do chamado" aria-label="Copiar número">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Divisor -->
+            <div class="chamado-info-divider"></div>
+
+            <!-- Bolinhas de progresso centralizadas -->
             <div class="chamado-progresso-scroll">
                 <div class="chamado-progresso-linha" id="progressoLinha"></div>
             </div>
-        </div>
 
-        <div class="chamado-etapa-atual-panel" id="etapaAtualPanel">
-            <div class="chamado-etapa-atual-info">
-                <div class="chamado-etapa-atual-icone" id="etapaAtualIcone">2</div>
-                <div>
-                    <p class="chamado-etapa-atual-label">Etapa atual</p>
-                    <h3 class="chamado-etapa-atual-titulo" id="etapaAtualTitulo">Agendamento da Avaliação</h3>
-                    <p class="chamado-etapa-atual-resp">
-                        Responsável: <strong id="etapaAtualResponsavel">Administração de Manutenção</strong>
-                    </p>
-                </div>
-            </div>
-            <div id="etapaAtualPermissao" class="chamado-etapa-sem-permissao">
-                Sem permissão para atender esta etapa
-            </div>
         </div>
 
         <div class="chamado-abas-wrapper">
@@ -741,8 +858,32 @@
     <script src="js/fluxo-chamados.js"></script>
     <script src="js/renderizador-etapas.js"></script>
     <script src="js/user-search.js"></script>
+    <script src="js/card-lista.js"></script>
+    <script src="js/card-quadrado.js"></script>
     <script src="js/script.js"></script>
-    <script src="js/user-search.js"></script>
+    <script src="js/modal-lembrete.js"></script>
+
+    <!-- Máscara de telefone para o campo de contato -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const telInput = document.getElementById('telefoneSolicitante');
+            if (telInput) {
+                telInput.addEventListener('input', function () {
+                    let v = this.value.replace(/\D/g, '').substring(0, 11);
+                    if (v.length > 10) {
+                        v = v.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+                    } else if (v.length > 6) {
+                        v = v.replace(/^(\d{2})(\d{4})(\d{0,4})$/, '($1) $2-$3');
+                    } else if (v.length > 2) {
+                        v = v.replace(/^(\d{2})(\d{0,5})$/, '($1) $2');
+                    } else if (v.length > 0) {
+                        v = v.replace(/^(\d{0,2})$/, '($1');
+                    }
+                    this.value = v;
+                });
+            }
+        });
+    </script>
 
 </body>
 

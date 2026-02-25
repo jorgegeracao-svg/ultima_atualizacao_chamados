@@ -1,7 +1,7 @@
 // ==================== SISTEMA DE FLUXO DE CHAMADOS ==================== //
 
 class Chamado {
-    constructor(id, titulo, observacao, unidade, solicitante) {
+    constructor(id, titulo, observacao, unidade, solicitante, fotos) {
         this.id = id;
         this.titulo = titulo;
         this.dataCriacao = new Date();
@@ -9,18 +9,18 @@ class Chamado {
         this.solicitante = solicitante;
         this.etapas = [];
 
-        this.criarEtapa1(observacao, unidade, solicitante);
+        this.criarEtapa1(observacao, unidade, solicitante, fotos);
     }
 
     // ==================== ETAPA 1 - ABERTURA DO CHAMADO ====================
-    criarEtapa1(observacao, unidade, solicitante) {
+    criarEtapa1(observacao, unidade, solicitante, fotos) {
         const etapa1 = {
             numero: 1,
             titulo: 'Abertura do Chamado',
             categoria: 'SOLICITANTE',
             status: 'CONCLUIDA',
             expandida: false,
-            dados: { observacao, unidade },
+            dados: { observacao, unidade, fotos: fotos || [] },
             conclusao: {
                 usuario: solicitante.nomeCompleto,
                 dataHora: new Date()
@@ -396,8 +396,8 @@ class GerenciadorChamados {
         localStorage.setItem('chamadosFluxo', JSON.stringify(this.chamados));
     }
 
-    criarChamado(titulo, observacao, unidade, solicitante) {
-        const chamado = new Chamado(this.contadorId++, titulo, observacao, unidade, solicitante);
+    criarChamado(titulo, observacao, unidade, solicitante, fotos) {
+        const chamado = new Chamado(this.contadorId++, titulo, observacao, unidade, solicitante, fotos);
         this.chamados.push(chamado);
         this.salvarChamados();
         return chamado;
