@@ -1456,3 +1456,804 @@
         width: 150px;
     }
 }
+
+/* ==========================================================================
+   CARD DE MENSAGEM — ESTILO OPÇÃO 2 (azul claro flutuante com borda esquerda)
+   Substitui o layout de timeline por cards individuais por etapa.
+   ========================================================================== */
+
+.msg-card-op2-wrapper {
+    padding: 10px 16px 0;
+}
+
+.msg-card-op2-wrapper:last-child {
+    padding-bottom: 10px;
+}
+
+.msg-card-op2 {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-left: 4px solid #0095db;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+}
+
+.msg-card-op2:hover {
+    box-shadow: 0 2px 12px rgba(0, 149, 219, 0.12);
+}
+
+/* ── Header azul claro (clicável) ── */
+.msg-card-op2-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+}
+
+.msg-card-op2-header:hover {
+    background: #dbeafe;
+}
+
+/* Círculo com número da etapa */
+.msg-card-op2-num {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #0095db;
+    color: white;
+    font-size: 13px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0, 149, 219, 0.3);
+}
+
+/* Coluna de texto */
+.msg-card-op2-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.msg-card-op2-subtexto {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #3b82f6;
+    margin-bottom: 2px;
+}
+
+.msg-card-op2-titulo {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e3a5f;
+    margin-bottom: 3px;
+}
+
+.msg-card-op2-resp {
+    font-size: 12px;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.msg-card-op2-resp strong {
+    color: #0095db;
+    font-weight: 600;
+}
+
+.msg-card-op2-data {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-left: 2px;
+}
+
+/* ── Corpo colapsável ── */
+.msg-card-op2-body {
+    background: white;
+    border-top: 1px solid #bfdbfe;
+    overflow: hidden;
+    max-height: 1000px;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.25s ease;
+    opacity: 1;
+}
+
+.msg-card-op2-body.collapsed {
+    max-height: 0;
+    opacity: 0;
+    border-top: none;
+}
+
+/* ── Espaçamento dos campos dentro do corpo ── */
+.msg-card-op2-body .chamado-mensagem-campos {
+    padding: 14px 16px;
+}
+
+
+/* ==========================================================================
+   ABA FLUXO / RESUMO
+   ========================================================================== */
+
+/* --- Seção do progresso dentro da aba --- */
+.fluxo-progresso-section {
+    padding: 20px 20px 8px;
+    border-top: 1px solid var(--color-gray-200);
+    margin-top: 8px;
+}
+
+.fluxo-progresso-titulo {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--color-gray-500);
+    margin-bottom: 16px;
+}
+
+/* --- Grade de cards de resumo --- */
+.fluxo-resumo-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 20px 20px 4px;
+}
+
+/* --- Card individual --- */
+.resumo-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    background: var(--color-gray-50);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.resumo-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Ícone colorido por variante */
+.resumo-card-icone {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.resumo-card-icone svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Variantes de cor */
+.resumo-card-azul    { border-color: #bfdbfe; background: #eff6ff; }
+.resumo-card-azul    .resumo-card-icone { background: #dbeafe; }
+.resumo-card-azul    .resumo-card-icone svg { stroke: #2563eb; }
+
+.resumo-card-verde   { border-color: #bbf7d0; background: #f0fdf4; }
+.resumo-card-verde   .resumo-card-icone { background: #dcfce7; }
+.resumo-card-verde   .resumo-card-icone svg { stroke: #16a34a; }
+
+.resumo-card-laranja { border-color: #fed7aa; background: #fff7ed; }
+.resumo-card-laranja .resumo-card-icone { background: #ffedd5; }
+.resumo-card-laranja .resumo-card-icone svg { stroke: #ea580c; }
+
+.resumo-card-vermelho { border-color: #fecaca; background: #fef2f2; }
+.resumo-card-vermelho .resumo-card-icone { background: #fee2e2; }
+.resumo-card-vermelho .resumo-card-icone svg { stroke: #dc2626; }
+
+.resumo-card-roxo    { border-color: #e9d5ff; background: #faf5ff; }
+.resumo-card-roxo    .resumo-card-icone { background: #f3e8ff; }
+.resumo-card-roxo    .resumo-card-icone svg { stroke: #9333ea; }
+
+/* Textos */
+.resumo-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.resumo-card-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-gray-500);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.resumo-card-valor {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Responsivo — 1 coluna em telas menores */
+@media (max-width: 560px) {
+    .fluxo-resumo-cards {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* ==========================================================================
+   SUMÁRIO DE ETAPAS — Aba Fluxo / Resumo
+   ========================================================================== */
+
+.fluxo-sumario-section {
+    padding: 0 20px 20px;
+    border-top: 1px solid var(--color-gray-200);
+    margin-top: 8px;
+    padding-top: 20px;
+}
+
+.fluxo-sumario-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+/* --- Linha de etapa --- */
+.sumario-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 14px;
+    background: white;
+    border-bottom: 1px solid var(--color-gray-100);
+    transition: background 0.15s;
+}
+
+.sumario-row:last-child {
+    border-bottom: none;
+}
+
+.sumario-row:hover {
+    background: var(--color-gray-50);
+}
+
+/* Linha da etapa em andamento — destaque suave */
+.sumario-row-ativo {
+    background: #eff6ff;
+    border-left: 3px solid #0095db;
+}
+
+.sumario-row-ativo:hover {
+    background: #dbeafe;
+}
+
+/* --- Número / ícone de check --- */
+.sumario-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+
+.sumario-num svg {
+    width: 13px;
+    height: 13px;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.sumario-num-ok      { background: #dcfce7; color: #16a34a; }
+.sumario-num-ok svg  { stroke: #16a34a; }
+.sumario-num-ativo   { background: #0095db; color: white; }
+.sumario-num-pendente { background: var(--color-gray-100); color: var(--color-gray-400); }
+
+/* --- Info central --- */
+.sumario-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.sumario-titulo {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sumario-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 2px;
+}
+
+.sumario-responsavel {
+    font-size: 11px;
+    color: var(--color-gray-500);
+    font-weight: 500;
+}
+
+.sumario-sep {
+    font-size: 11px;
+    color: var(--color-gray-300);
+}
+
+.sumario-data,
+.sumario-usuario {
+    font-size: 11px;
+    color: var(--color-gray-400);
+}
+
+/* --- Badge de status --- */
+.sumario-status {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.sumario-status-ok       { background: #dcfce7; color: #16a34a; }
+.sumario-status-ativo    { background: #dbeafe; color: #2563eb; }
+.sumario-status-pendente { background: var(--color-gray-100); color: var(--color-gray-400); }
+
+
+/* ==========================================================================
+   CARDS DA ABA MENSAGENS — classes msg-ticket-*
+   Cole este bloco no final do arquivo 03-novo-chamado-e-detalhes.css
+   ========================================================================== */
+
+/* --- Wrapper externo de cada card de etapa --- */
+.msg-ticket-wrapper {
+    margin-bottom: 12px;
+}
+
+/* --- Card principal --- */
+.msg-ticket-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-gray-200);
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.2s;
+}
+
+.msg-ticket-card:hover {
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.09);
+}
+
+/* --- Header (fundo azul claro, clicável) --- */
+.msg-ticket-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    background: #eff6ff;
+    border-bottom: 1px solid #bfdbfe;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+}
+
+.msg-ticket-header:hover {
+    background: #dbeafe;
+}
+
+/* Header verde para etapas concluídas */
+.msg-ticket-card.concluida .msg-ticket-header {
+    background: #f0fdf4;
+    border-bottom-color: #bbf7d0;
+}
+
+.msg-ticket-card.concluida .msg-ticket-header:hover {
+    background: #dcfce7;
+}
+
+.msg-ticket-card.concluida .msg-ticket-num {
+    background: #16a34a;
+    box-shadow: 0 2px 6px rgba(22, 163, 74, 0.3);
+}
+
+.msg-ticket-card.concluida .msg-ticket-subtexto {
+    color: #16a34a;
+}
+
+.msg-ticket-card.concluida .msg-ticket-titulo {
+    color: #14532d;
+}
+
+.msg-ticket-card.concluida .msg-ticket-detalhes-btn {
+    color: #16a34a;
+    border-color: #bbf7d0;
+}
+
+.msg-ticket-card.concluida .msg-ticket-detalhes-btn:hover {
+    background: #dcfce7;
+    border-color: #86efac;
+}
+
+/* Body expandido verde para etapas concluídas */
+.msg-ticket-card.concluida .msg-ticket-body {
+    background: #f0fdf4;
+    border-top-color: #bbf7d0;
+}
+
+.msg-ticket-card.concluida .msg-ticket-divider {
+    background: #bbf7d0;
+}
+
+.msg-ticket-card.concluida .msg-ticket-remetente-nome {
+    color: #14532d;
+}
+
+.msg-ticket-card.concluida .msg-ticket-remetente-unidade,
+.msg-ticket-card.concluida .msg-ticket-data-rodape {
+    color: #4ade80;
+    color: #15803d;
+}
+
+.msg-ticket-card.concluida .msg-ticket-avatar {
+    background: rgba(22, 163, 74, 0.12);
+}
+
+.msg-ticket-card.concluida .msg-ticket-avatar svg {
+    stroke: #16a34a;
+}
+
+.msg-ticket-card.concluida .msg-ticket-conteudo-linha {
+    color: #14532d;
+}
+
+/* Lado esquerdo do header: número + info */
+.msg-ticket-header-esq {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+/* Círculo com número da etapa */
+.msg-ticket-num {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #0095db;
+    color: white;
+    font-size: 13px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0, 149, 219, 0.3);
+}
+
+/* Coluna de texto (subtexto + título) */
+.msg-ticket-header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.msg-ticket-subtexto {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: #3b82f6;
+}
+
+.msg-ticket-titulo {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e3a5f;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Botão "detalhes" com chevron */
+.msg-ticket-detalhes-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #0095db;
+    background: white;
+    border: 1px solid #bfdbfe;
+    border-radius: 20px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.15s, border-color 0.15s;
+    font-family: inherit;
+}
+
+.msg-ticket-detalhes-btn:hover {
+    background: #dbeafe;
+    border-color: #93c5fd;
+}
+
+/* Chevron (seta de colapso) */
+.msg-ticket-chevron {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* --- Corpo colapsável — mantém o fundo azul claro do header --- */
+.msg-ticket-body {
+    overflow: hidden;
+    max-height: 800px;
+    opacity: 1;
+    background: #eff6ff;
+    border-top: 1px solid #bfdbfe;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.25s ease;
+}
+
+.msg-ticket-body.collapsed {
+    max-height: 0;
+    opacity: 0;
+    border-top: none;
+}
+
+/* --- Seção do remetente --- */
+.msg-ticket-remetente {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px 10px;
+}
+
+/* Avatar circular com ícone SVG */
+.msg-ticket-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(0, 149, 219, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.msg-ticket-avatar svg {
+    width: 17px;
+    height: 17px;
+    stroke: #0095db;
+}
+
+/* Nome e setor do remetente */
+.msg-ticket-remetente-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex: 1;
+    min-width: 0;
+}
+
+.msg-ticket-remetente-nome {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e3a5f;
+}
+
+.msg-ticket-remetente-unidade {
+    font-size: 11px;
+    color: #5b80a0;
+}
+
+/* Badge de perfil (reutiliza as classes badge-* já existentes no CSS) */
+.msg-ticket-perfil-badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    flex-shrink: 0;
+}
+
+/* --- Divisor entre remetente e conteúdo --- */
+.msg-ticket-divider {
+    height: 1px;
+    background: #bfdbfe;
+    margin: 0 16px;
+}
+
+/* --- Área de conteúdo (campos da etapa) — fundo amarelo dentro do container azul --- */
+.msg-ticket-conteudo {
+    margin: 0 16px 14px;
+    padding: 12px 14px;
+    background: #fffdf0;
+    border: 1px solid #f0e8c0;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* Linha de campo — só exibe o valor, sem o label em maiúsculo */
+.msg-ticket-conteudo-linha {
+    font-size: 13px;
+    color: #1e3a5f;
+    line-height: 1.6;
+}
+
+/* Oculta o label (strong) — só mostra o valor */
+.msg-ticket-conteudo-linha strong {
+    display: none;
+}
+
+/* Data/hora no rodapé do conteúdo */
+.msg-ticket-data-rodape {
+    font-size: 11px;
+    color: #5b80a0;
+    margin-top: 8px;
+    display: block;
+    text-align: right;
+}
+
+
+/* ==========================================================================
+   RESPONSIVIDADE
+   ========================================================================== */
+@media (max-width: 480px) {
+    .msg-ticket-titulo {
+        font-size: 12px;
+    }
+
+    .msg-ticket-detalhes-btn {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+
+    .msg-ticket-num {
+        width: 28px;
+        height: 28px;
+        font-size: 11px;
+    }
+}
+
+
+
+/* ==========================================================================
+   ABA FLUXO/RESUMO — layout lado a lado sem scroll externo
+   ========================================================================== */
+
+/* Oculta os containers externos que ficam fora do sistema de abas */
+.fluxo-resumo-cards,
+.fluxo-sumario-section,
+.fluxo-progresso-section {
+    display: none !important;
+}
+
+/* A aba usa flex para colocar sumário e cards lado a lado */
+#aba-fluxo {
+    display: none;          /* padrão — sobrescrito pelo .active */
+    overflow: hidden;
+    padding: 0 !important;
+}
+
+#aba-fluxo.active {
+    display: flex !important;
+    gap: 0;
+    height: calc(100vh - 260px);
+    min-height: 320px;
+    overflow: hidden;
+}
+
+/* Coluna esquerda: sumário de etapas */
+.fluxo-col-sumario {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    height: 100%;
+    padding: 20px 20px 20px 24px;
+    border-right: 1px solid var(--color-gray-200);
+}
+
+.fluxo-col-sumario .fluxo-progresso-titulo {
+    flex-shrink: 0;
+    margin-bottom: 12px;
+}
+
+.fluxo-col-sumario .fluxo-sumario-lista {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.fluxo-col-sumario .fluxo-sumario-lista::-webkit-scrollbar { width: 4px; }
+.fluxo-col-sumario .fluxo-sumario-lista::-webkit-scrollbar-track { background: transparent; }
+.fluxo-col-sumario .fluxo-sumario-lista::-webkit-scrollbar-thumb { background: var(--color-gray-200); border-radius: 4px; }
+
+/* Coluna direita: cards de métricas */
+.fluxo-col-cards {
+    flex: 0 0 300px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    align-content: start;
+    padding: 20px;
+    overflow-y: auto;
+    height: 100%;
+}
+
+.fluxo-col-cards::-webkit-scrollbar { width: 4px; }
+.fluxo-col-cards::-webkit-scrollbar-track { background: transparent; }
+.fluxo-col-cards::-webkit-scrollbar-thumb { background: var(--color-gray-200); border-radius: 4px; }
+
+.fluxo-col-cards .resumo-card { padding: 12px; gap: 10px; }
+.fluxo-col-cards .resumo-card-icone { width: 32px; height: 32px; border-radius: 8px; }
+.fluxo-col-cards .resumo-card-icone svg { width: 15px; height: 15px; }
+.fluxo-col-cards .resumo-card-valor { font-size: 13px; }
+.fluxo-col-cards .resumo-card-label { font-size: 10px; }
+
+/* Responsivo */
+@media (max-width: 768px) {
+    #aba-fluxo.active {
+        flex-direction: column;
+        height: auto;
+        overflow-y: auto;
+    }
+
+    .fluxo-col-sumario {
+        border-right: none;
+        border-bottom: 1px solid var(--color-gray-200);
+        height: auto;
+        overflow: visible;
+        padding: 16px;
+    }
+
+    .fluxo-col-cards {
+        flex: none;
+        width: 100%;
+        height: auto;
+        overflow: visible;
+        padding: 16px;
+    }
+}

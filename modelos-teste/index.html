@@ -694,9 +694,9 @@
                     title="Mostrar/ocultar menu">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round">
-                        <path d="M22 3H2v18h20V3z"/>
-                        <path d="M7 3v18"/>
-                        <path d="m15 9-3 3 3 3"/>
+                        <path d="M22 3H2v18h20V3z" />
+                        <path d="M7 3v18" />
+                        <path d="m15 9-3 3 3 3" />
                     </svg>
                 </button>
             </div>
@@ -739,8 +739,7 @@
                 </button>
 
                 <!-- Botão voltar / novo chamado -->
-                <button class="det-header-btn det-back-btn" id="btnVoltarDetalhes" aria-label="Fechar"
-                    title="Fechar">
+                <button class="det-header-btn det-back-btn" id="btnVoltarDetalhes" aria-label="Fechar" title="Fechar">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -770,8 +769,10 @@
                 <!-- Direita: número + botão copiar -->
                 <div class="chamado-info-numero-wrapper">
                     <span class="chamado-info-numero" id="detailsTicketNumber">#00000000</span>
-                    <button class="chamado-info-copiar" id="btnCopiarNumero" title="Copiar número do chamado" aria-label="Copiar número">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <button class="chamado-info-copiar" id="btnCopiarNumero" title="Copiar número do chamado"
+                        aria-label="Copiar número">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                         </svg>
@@ -783,16 +784,19 @@
             <!-- Divisor -->
             <div class="chamado-info-divider"></div>
 
-            <!-- Bolinhas de progresso centralizadas -->
-            <div class="chamado-progresso-scroll">
-                <div class="chamado-progresso-linha" id="progressoLinha"></div>
-            </div>
-
         </div>
 
         <div class="chamado-abas-wrapper">
 
             <div class="chamado-abas-nav" role="tablist">
+
+                <button class="chamado-aba-btn" data-aba="fluxo" role="tab" aria-selected="false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                    </svg>
+                    Fluxo / Resumo
+                </button>
 
                 <button class="chamado-aba-btn active" data-aba="mensagens" role="tab" aria-selected="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -823,6 +827,20 @@
                     </svg>
                     Anexos
                 </button>
+            </div>
+
+            <div class="chamado-aba-conteudo" id="aba-fluxo" role="tabpanel">
+                <!-- Cards de resumo -->
+                <div class="fluxo-resumo-cards" id="fluxoResumoCards"></div>
+                <!-- Bolinhas de progresso -->
+                <div class="fluxo-progresso-section">
+                    <p class="fluxo-progresso-titulo">Progresso do chamado</p>
+                    <div class="chamado-progresso-scroll">
+                        <div class="chamado-progresso-linha" id="progressoLinha"></div>
+                    </div>
+                </div>
+                <!-- Sumário de etapas -->
+                <div class="fluxo-sumario-section" id="fluxoSumario"></div>
             </div>
 
             <div class="chamado-aba-conteudo active" id="aba-mensagens" role="tabpanel">
@@ -856,6 +874,7 @@
 
     <!-- Scripts (carregados no final para não bloquear a renderização) -->
     <script src="js/fluxo-chamados.js"></script>
+    <script src="js/fluxo-config.js"></script>
     <script src="js/renderizador-etapas.js"></script>
     <script src="js/user-search.js"></script>
     <script src="js/card-lista.js"></script>

@@ -667,6 +667,7 @@ document.addEventListener('DOMContentLoaded', function () {
         renderProgresso(chamado);
         renderMensagens(chamado);
         renderFormularioAba(chamado);
+        renderResumoFluxo(chamado);
 
         // Resetar para a aba Mensagens
         document.querySelectorAll('.chamado-aba-btn').forEach(b => b.classList.remove('active'));
@@ -698,20 +699,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!container) return;
         container.innerHTML = '';
 
-        // Configuração fixa das etapas do fluxo de Manutenção Canteiros
-        const etapasConfig = [
-            { num: '1', label: 'Abertura do Chamado' },
-            { num: '2', label: 'Agendamento da Avaliação' },
-            { num: '3', label: 'Avaliação Técnica' },
-            { num: '4', label: 'Verificação de Estoque' },
-            { num: '5.1', label: 'Solicitação de Compra', sub: true },
-            { num: '5.2', label: 'Pedido de Compra', sub: true },
-            { num: '5.3', label: 'Programar Entrega', sub: true },
-            { num: '6', label: 'Recebimento de Mercadoria' },
-            { num: '7', label: 'Programação do Serviço' },
-            { num: '8', label: 'Execução da Manutenção' },
-            { num: '9', label: 'Finalização do Chamado' }
-        ];
+        // Fonte única de verdade — definida em fluxo-config.js
+        const etapasConfig = window.FLUXO_MANUTENCAO;
 
         // Montar mapa { numeroEtapa: status } para consulta rápida
         const etapasMap = {};
@@ -752,6 +741,196 @@ document.addEventListener('DOMContentLoaded', function () {
             item.appendChild(label);
             container.appendChild(item);
         });
+    }
+
+
+    // =========================================================================
+    // ABA FLUXO / RESUMO — métricas e progresso do chamado
+    // =========================================================================
+
+    function renderResumoFluxo(chamado) {
+        // Oculta os wrappers externos (que ficam fora do sistema de abas)
+        // e usa o #aba-fluxo como único ponto de renderização.
+        const wrapperCards  = document.querySelector('.fluxo-resumo-cards');
+        const wrapperSumario = document.querySelector('.fluxo-sumario-section, .fluxo-progresso-section');
+        if (wrapperCards)   wrapperCards.style.display   = 'none';
+        if (wrapperSumario) wrapperSumario.style.display = 'none';
+
+        // Renderiza dentro do #aba-fluxo (container correto da aba)
+        const abaFluxo = document.getElementById('aba-fluxo');
+        if (!abaFluxo) return;
+        abaFluxo.innerHTML = '';
+
+        // Coluna esquerda — sumário de etapas
+        const colSumario = document.createElement('div');
+        colSumario.className = 'fluxo-col-sumario';
+
+        // Coluna direita — cards de métricas
+        const container = document.createElement('div');
+        container.className = 'fluxo-col-cards';
+
+        abaFluxo.appendChild(colSumario);
+        abaFluxo.appendChild(container);
+
+        const agora = new Date();
+        const dataAbertura = chamado.dataCriacao ? new Date(chamado.dataCriacao) : null;
+        const diasAberto = dataAbertura
+            ? Math.floor((agora - dataAbertura) / (1000 * 60 * 60 * 24))
+            : null;
+
+        const etapaAtiva = getEtapaAtiva(chamado);
+        const finalizado = chamado.status === 'FINALIZADO';
+
+        // Horas na etapa atual
+        let horasEtapaAtual = null;
+        if (etapaAtiva) {
+            const dataInicioEtapa = etapaAtiva.dataInicio
+                ? new Date(etapaAtiva.dataInicio)
+                : (() => {
+                    const etapas = chamado.etapas || [];
+                    const idxAtiva = etapas.findIndex(e => e.numero === etapaAtiva.numero || e === etapaAtiva);
+                    const anterior = idxAtiva > 0 ? etapas[idxAtiva - 1] : null;
+                    return anterior?.conclusao?.dataHora ? new Date(anterior.conclusao.dataHora) : dataAbertura;
+                })();
+            if (dataInicioEtapa) {
+                horasEtapaAtual = ((agora - dataInicioEtapa) / (1000 * 60 * 60)).toFixed(1);
+            }
+        }
+
+        // Data de fim (se finalizado)
+        let dataFim = null;
+        if (finalizado && chamado.etapas) {
+            const ultima = [...chamado.etapas].reverse().find(e => e.conclusao?.dataHora);
+            if (ultima) dataFim = new Date(ultima.conclusao.dataHora);
+        }
+        const diasEmAndamento = dataAbertura && dataFim
+            ? Math.floor((dataFim - dataAbertura) / (1000 * 60 * 60 * 24))
+            : diasAberto;
+
+        const totalEtapas = chamado.etapas?.length || 0;
+        const etapasConcluidas = chamado.etapas?.filter(e => e.status === 'CONCLUIDA').length || 0;
+        const nomeResponsavel = getResponsavelEtapaAtiva(chamado);
+        const nomeEtapa = getNomeEtapaAtiva(chamado);
+
+        const cards = [
+            {
+                icone: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`,
+                label: 'Data de abertura',
+                valor: dataAbertura ? formatarDataHora(chamado.dataCriacao) : '-',
+                cor: 'azul'
+            },
+            {
+                icone: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`,
+                label: finalizado ? 'Duração total' : 'Dias em andamento',
+                valor: diasEmAndamento !== null ? `${diasEmAndamento} dia${diasEmAndamento !== 1 ? 's' : ''}` : '-',
+                cor: diasEmAndamento > 7 ? 'laranja' : 'verde'
+            },
+            {
+                icone: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>`,
+                label: 'Etapa atual',
+                valor: nomeEtapa,
+                cor: finalizado ? 'verde' : 'azul'
+            },
+            {
+                icone: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`,
+                label: finalizado ? 'Finalizado por' : 'Setor responsável agora',
+                valor: nomeResponsavel,
+                cor: 'roxo'
+            },
+            {
+                icone: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`,
+                label: 'Tempo na etapa atual',
+                valor: horasEtapaAtual !== null
+                    ? (horasEtapaAtual < 1
+                        ? `${Math.round(horasEtapaAtual * 60)} min`
+                        : `${horasEtapaAtual}h`)
+                    : (finalizado ? 'Concluído' : '-'),
+                cor: horasEtapaAtual > 48 ? 'vermelho' : horasEtapaAtual > 24 ? 'laranja' : 'verde'
+            },
+            {
+                icone: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>`,
+                label: 'Etapas concluídas',
+                valor: `${etapasConcluidas} de ${totalEtapas}`,
+                cor: etapasConcluidas === totalEtapas ? 'verde' : 'azul'
+            }
+        ];
+
+        cards.forEach(card => {
+            const el = document.createElement('div');
+            el.className = `resumo-card resumo-card-${card.cor}`;
+            el.innerHTML = `
+                <div class="resumo-card-icone">${card.icone}</div>
+                <div class="resumo-card-info">
+                    <span class="resumo-card-label">${card.label}</span>
+                    <span class="resumo-card-valor">${card.valor}</span>
+                </div>`;
+            container.appendChild(el);
+        });
+
+        // --- Sumário de etapas ---
+        const sumario = colSumario;
+
+        const catLabels = {
+            SOLICITANTE:    'Solicitante',
+            ADMINISTRATIVO: 'Adm. de Manutenção',
+            TECNICO:        'Técnico',
+            COMPRADOR:      'Comprador',
+            GESTOR:         'Gestor'
+        };
+
+        // Fonte única de verdade — definida em fluxo-config.js
+        const etapasConfig = window.FLUXO_MANUTENCAO;
+
+        // Montar mapa com dados reais { numero: etapaObj }
+        const etapasMap = {};
+        chamado.etapas?.forEach(e => {
+            etapasMap[String(e.numero)] = e;
+            e.subetapas?.forEach(s => { etapasMap[String(s.numero)] = s; });
+        });
+
+        const titulo = document.createElement('p');
+        titulo.className = 'fluxo-progresso-titulo';
+        titulo.textContent = 'Sumário das etapas';
+        sumario.appendChild(titulo);
+
+        const lista = document.createElement('div');
+        lista.className = 'fluxo-sumario-lista';
+
+        etapasConfig.forEach(cfg => {
+            const etapa       = etapasMap[cfg.num];
+            const concluida   = etapa?.status === 'CONCLUIDA';
+            const emAndamento = etapa?.status === 'EM_ANDAMENTO';
+            // Se não existe no mapa ainda = pendente
+            const responsavel = catLabels[etapa?.categoria || cfg.categoria] || cfg.categoria;
+            const dataConc    = etapa?.conclusao?.dataHora ? formatarDataHora(etapa.conclusao.dataHora) : null;
+            const usuario     = etapa?.conclusao?.usuario || null;
+
+            const statusLabel = concluida ? 'Concluída' : emAndamento ? 'Em andamento' : 'Pendente';
+            const statusClass = concluida ? 'sumario-status-ok' : emAndamento ? 'sumario-status-ativo' : 'sumario-status-pendente';
+            const numClass    = concluida ? 'sumario-num-ok' : emAndamento ? 'sumario-num-ativo' : 'sumario-num-pendente';
+
+            const row = document.createElement('div');
+            row.className = `sumario-row${emAndamento ? ' sumario-row-ativo' : ''}`;
+            row.innerHTML = `
+                <div class="sumario-num ${numClass}">
+                    ${concluida
+                        ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`
+                        : cfg.num}
+                </div>
+                <div class="sumario-info">
+                    <div class="sumario-titulo">${cfg.label}</div>
+                    <div class="sumario-meta">
+                        <span class="sumario-responsavel">${responsavel}</span>
+                        ${dataConc ? `<span class="sumario-sep">·</span><span class="sumario-data">${dataConc}</span>` : ''}
+                        ${usuario  ? `<span class="sumario-sep">·</span><span class="sumario-usuario">${usuario}</span>` : ''}
+                    </div>
+                </div>
+                <span class="sumario-status ${statusClass}">${statusLabel}</span>`;
+
+            lista.appendChild(row);
+        });
+
+        sumario.appendChild(lista);
     }
 
 
@@ -823,12 +1002,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const badgeClass = badgeClasses[msg.categoria] || 'badge-admin';
             const label = catLabels[msg.categoria] || msg.categoria;
 
-            const partes = (msg.usuario || 'US').split(' ');
-            const iniciais = (partes.length >= 2
-                ? partes[0][0] + partes[partes.length - 1][0]
-                : (msg.usuario || 'US').substring(0, 2)
-            ).toUpperCase();
-
             // Montar campos dos dados da etapa
             const campos = [];
             const d = msg.dados || {};
@@ -854,57 +1027,61 @@ document.addEventListener('DOMContentLoaded', function () {
             if (d.avaliacao) campos.push({ label: 'AVALIAÇÃO', valor: '⭐'.repeat(parseInt(d.avaliacao)) });
             if (campos.length === 0) campos.push({ label: 'STATUS', valor: 'Etapa concluída.' });
 
-            const camposHTML = campos.map(c => `
-                <div class="chamado-mensagem-campo">
-                    <div class="chamado-mensagem-campo-label">${c.label}</div>
-                    <div class="chamado-mensagem-campo-valor">${c.valor}</div>
-                </div>`).join('');
-
-            // Wrapper timeline (bolinha + conector + card)
+            // Wrapper do card — estilo msg-ticket-*
             const wrapper = document.createElement('div');
-            wrapper.className = 'msg-timeline-item';
+            wrapper.className = 'msg-ticket-wrapper';
 
-            // =================================================================
-            // CARD: colapsado mostra apenas "Etapa X — Nome da Etapa"
-            // Ao expandir, revela avatar, usuário, badge, data e campos de dados
-            // =================================================================
             wrapper.innerHTML = `
-                <div class="msg-timeline-coluna">
-                    <div class="msg-timeline-dot msg-timeline-dot--ativo">${idx + 1}</div>
-                    <div class="msg-timeline-conector msg-timeline-conector--ativo"></div>
-                </div>
-                <div class="chamado-mensagem-card">
-                    <div class="chamado-mensagem-header chamado-mensagem-header-toggle">
-                        <span class="msg-etapa-titulo">Etapa ${msg.numero} — ${msg.titulo}</span>
-                        <button class="msg-toggle-btn" aria-label="Expandir mensagem">
-                            <svg class="msg-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="6 9 12 15 18 9"></polyline>
+                <div class="msg-ticket-card concluida">
+                    <!-- Header azul claro colapsável -->
+                    <div class="msg-ticket-header msg-ticket-toggle">
+                        <div class="msg-ticket-header-esq">
+                            <div class="msg-ticket-num">${msg.numero}</div>
+                            <div class="msg-ticket-header-info">
+                                <span class="msg-ticket-subtexto">Etapa concluída</span>
+                                <span class="msg-ticket-titulo">Etapa ${msg.numero} — ${msg.titulo}</span>
+                            </div>
+                        </div>
+                        <button class="msg-ticket-detalhes-btn msg-ticket-toggle" aria-label="Expandir">
+                            detalhes
+                            <svg class="msg-ticket-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="18 15 12 9 6 15"></polyline>
                             </svg>
                         </button>
                     </div>
-                    <div class="chamado-mensagem-body collapsed">
-                        <div class="msg-body-autor">
-                            <div class="chamado-mensagem-avatar">${iniciais}</div>
-                            <div class="msg-header-info">
-                                <div class="msg-header-top">
-                                    <span class="chamado-mensagem-nome">${msg.usuario}</span>
-                                    <span class="chamado-mensagem-perfil-badge ${badgeClass}">${label}</span>
-                                </div>
-                                <span class="chamado-mensagem-data">${formatarDataHora(msg.dataHora)}</span>
+                    <!-- Corpo colapsável -->
+                    <div class="msg-ticket-body collapsed">
+                        <!-- Remetente -->
+                        <div class="msg-ticket-remetente">
+                            <div class="msg-ticket-avatar">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
                             </div>
+                            <div class="msg-ticket-remetente-info">
+                                <span class="msg-ticket-remetente-nome">${msg.usuario}</span>
+                                <span class="msg-ticket-remetente-unidade">${label}</span>
+                            </div>
+                            <span class="msg-ticket-perfil-badge ${badgeClass}">${label.toUpperCase()}</span>
                         </div>
-                        <div class="chamado-mensagem-campos">${camposHTML}</div>
+                        <div class="msg-ticket-divider"></div>
+                        <!-- Conteúdo -->
+                        <div class="msg-ticket-conteudo">
+                            ${campos.map(c => `<p class="msg-ticket-conteudo-linha"><strong>${c.label}:</strong> ${c.valor}</p>`).join('')}
+                            <span class="msg-ticket-data-rodape">${formatarDataHora(msg.dataHora)}</span>
+                        </div>
                     </div>
                 </div>`;
 
             // Toggle ao clicar no header ou botão
-            wrapper.querySelector('.chamado-mensagem-header-toggle').addEventListener('click', function () {
-                const body = wrapper.querySelector('.chamado-mensagem-body');
-                const icon = wrapper.querySelector('.msg-toggle-icon');
+            wrapper.querySelector('.msg-ticket-toggle').addEventListener('click', function () {
+                const body = wrapper.querySelector('.msg-ticket-body');
+                const chevron = wrapper.querySelector('.msg-ticket-chevron');
                 const isCollapsed = body.classList.contains('collapsed');
                 body.classList.toggle('collapsed', !isCollapsed);
-                icon.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+                chevron.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
             });
 
             container.appendChild(wrapper);
@@ -989,12 +1166,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
             container.appendChild(wrapper);
 
-            // Evento do botão Avançar
-            document.getElementById('btnInlineAvancar')?.addEventListener('click', () => {
-                const obs = document.getElementById('inlineObservacao')?.value.trim();
+            // Evento do botão Avançar — busca dentro do wrapper, não no document inteiro
+            wrapper.querySelector('#btnInlineAvancar')?.addEventListener('click', () => {
+                const obsEl = wrapper.querySelector('#inlineObservacao');
+                const obs = obsEl?.value.trim();
                 if (!obs) {
-                    document.getElementById('inlineObservacao')?.focus();
-                    document.getElementById('inlineObservacao')?.setAttribute('style', 'min-height:80px;border-color:var(--color-danger);box-shadow:0 0 0 3px rgba(239,68,68,0.1);');
+                    obsEl?.focus();
+                    obsEl?.setAttribute('style', 'min-height:80px;border-color:var(--color-danger);box-shadow:0 0 0 3px rgba(239,68,68,0.1);');
                     return;
                 }
                 concluirEtapaComObservacao(chamado, etapa, obs);
@@ -1033,57 +1211,61 @@ document.addEventListener('DOMContentLoaded', function () {
     function concluirEtapaComObservacao(chamado, etapa, observacao) {
         const etapaNum = etapa.numero;
 
-        // Injetar observação nos dados antes de concluir
+        // Injeta observação e marca a etapa como concluída
         const injetarObs = (etapaObj) => {
             if (!etapaObj.dados) etapaObj.dados = {};
             etapaObj.dados.observacao = observacao;
-            etapaObj.status = 'CONCLUIDA';
+            etapaObj.status    = 'CONCLUIDA';
             etapaObj.expandida = false;
             etapaObj.conclusao = { usuario: usuarioAtual.nomeCompleto, dataHora: new Date() };
         };
 
-        // Localizar a etapa (ou subetapa) e chamar o método correto da classe Chamado
-        if (Number.isInteger(etapaNum)) {
-            switch (etapaNum) {
-                case 2: chamado.concluirEtapa2('', '', usuarioAtual); break;
-                case 3: chamado.concluirEtapa3('', '', usuarioAtual); break;
-                case 4: chamado.concluirEtapa4('', usuarioAtual); break;
-                case 6: chamado.concluirEtapa6('', usuarioAtual); break;
-                case 7: chamado.concluirEtapa7('', '', '', '', usuarioAtual); break;
-                case 8: chamado.concluirEtapa8('', '', null, usuarioAtual); break;
-                case 9: chamado.concluirEtapa9('CONFIRMADO', '', observacao, usuarioAtual); break;
-                default: break;
-            }
-            // Sobrescrever dados com a observação do formulário inline
-            const etapaObj = chamado.etapas.find(e => e.numero === etapaNum);
-            if (etapaObj) injetarObs(etapaObj);
-        } else {
-            // Subetapa (5.1, 5.2, 5.3)
-            const etapa5 = chamado.etapas.find(e => e.numero === 5);
-            if (etapa5) {
-                const sub = etapa5.subetapas?.find(s => Math.abs(s.numero - etapaNum) < 0.01);
-                if (sub) {
-                    if (Math.abs(etapaNum - 5.1) < 0.01) chamado.concluirSubetapa51('', '', '', usuarioAtual);
-                    if (Math.abs(etapaNum - 5.2) < 0.01) chamado.concluirSubetapa52('', '', [], '', '', null, usuarioAtual);
-                    if (Math.abs(etapaNum - 5.3) < 0.01) chamado.concluirSubetapa53('', '', '', '', usuarioAtual);
-                    // Sobrescrever com observação
-                    const subAtual = etapa5.subetapas?.find(s => Math.abs(s.numero - etapaNum) < 0.01);
-                    if (subAtual) injetarObs(subAtual);
-                }
-            }
-        }
+        // Mapa de funções — escala sem switch/case
+        const mapaConclusao = {
+            2:   () => chamado.concluirEtapa2('', '', usuarioAtual),
+            3:   () => chamado.concluirEtapa3('', '', usuarioAtual),
+            4:   () => chamado.concluirEtapa4('', usuarioAtual),
+            6:   () => chamado.concluirEtapa6('', usuarioAtual),
+            7:   () => chamado.concluirEtapa7('', '', '', '', usuarioAtual),
+            8:   () => chamado.concluirEtapa8('', '', null, usuarioAtual),
+            9:   () => chamado.concluirEtapa9('CONFIRMADO', '', observacao, usuarioAtual),
+            5.1: () => chamado.concluirSubetapa51('', '', '', usuarioAtual),
+            5.2: () => chamado.concluirSubetapa52('', '', [], '', '', null, usuarioAtual),
+            5.3: () => chamado.concluirSubetapa53('', '', '', '', usuarioAtual),
+        };
+
+        // Executa a função do mapa (chave numérica exata)
+        const chave = Object.keys(mapaConclusao).find(k => Math.abs(Number(k) - etapaNum) < 0.01);
+        if (chave) mapaConclusao[chave]();
+
+        // Sobrescrever com a observação digitada
+        const etapaObj = Number.isInteger(etapaNum)
+            ? chamado.etapas?.find(e => e.numero === etapaNum)
+            : chamado.etapas?.find(e => e.numero === 5)
+                ?.subetapas?.find(s => Math.abs(s.numero - etapaNum) < 0.01);
+
+        if (etapaObj) injetarObs(etapaObj);
 
         window.gerenciadorChamados.atualizarChamado(chamado);
+        reRenderizarDetalhes(chamado.id);
+    }
 
-        // Re-renderizar a tela de detalhes com os dados atualizados
+
+    // =========================================================================
+    // RE-RENDERIZAÇÃO CENTRALIZADA DA TELA DE DETALHES
+    // Fonte única — todos os pontos de atualização chamam isso.
+    // =========================================================================
+
+    function reRenderizarDetalhes(chamadoId) {
         const dadoAtualizado = reidratarChamado(
-            window.gerenciadorChamados.chamados.find(c => c.id == chamado.id)
+            window.gerenciadorChamados.chamados.find(c => c.id == chamadoId)
         );
+        if (!dadoAtualizado) return;
         window.chamadoAtual = dadoAtualizado;
-
         renderProgresso(dadoAtualizado);
         renderMensagens(dadoAtualizado);
         renderFormularioAba(dadoAtualizado);
+        renderResumoFluxo(dadoAtualizado);
     }
 
 
