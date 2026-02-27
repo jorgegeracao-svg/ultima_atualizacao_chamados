@@ -444,3 +444,182 @@ body {
         -webkit-tap-highlight-color: transparent;
     }
 }
+
+/* ==========================================================================
+   ADIÇÕES — 12 ETAPAS (compatibilidade com novos status e variantes)
+   ========================================================================== */
+
+/* Variável extra de cinza (usada em alguns helpers do script) */
+:root {
+    --color-gray-600: #4b5563;
+}
+
+/* Badge de status: aguardando confirmação (Et. 4 após ADM selecionar técnico) */
+.badge-aguardando {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* Badge de perfil: gestor (vermelho escuro, igual badge-admin mas diferenciável) */
+.badge-gestor {
+    background: #f5f3ff;
+    color: #5b21b6;
+}
+
+/* Formulário inline da aba Mensagens — divisor entre campos */
+.inline-form-divider {
+    height: 1px;
+    background: var(--color-gray-200);
+    margin: 16px 0;
+}
+
+/* Grupo de dois botões lado a lado (Sim/Não, Aprovar/Reprovar) */
+.btn-group-inline {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+/* Botão de perigo (reprovar, não) — versão inline */
+.btn-danger-inline {
+    padding: 9px 18px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid #fca5a5;
+    background: #fef2f2;
+    color: #991b1b;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.btn-danger-inline:hover {
+    background: #fee2e2;
+    border-color: #f87171;
+}
+
+/* Textarea de observação dentro do formulário inline — altura menor */
+.inline-obs-textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+/* Alerta de etapa condicional (ex: compras — exibido só se necessário) */
+.etapa-condicional-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: var(--radius-md);
+    font-size: 12px;
+    color: #92400e;
+    font-weight: 500;
+    margin-bottom: 12px;
+}
+
+.etapa-condicional-info svg {
+    width: 15px;
+    height: 15px;
+    stroke: #d97706;
+    fill: none;
+    flex-shrink: 0;
+}
+
+/* Estilo de campo somente leitura (exibição de dados de etapas anteriores) */
+.field-readonly {
+    padding: 10px 14px;
+    background: var(--color-gray-50);
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    color: var(--color-gray-700);
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+/* Stars de avaliação (Et. 12 — Finalizar Chamado) */
+.star-rating {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.star-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px;
+    font-size: 28px;
+    color: var(--color-gray-300);
+    transition: color 0.15s, transform 0.1s;
+    line-height: 1;
+}
+
+.star-btn:hover,
+.star-btn.ativa {
+    color: #f59e0b;
+}
+
+.star-btn:hover { transform: scale(1.15); }
+
+/* Label de confirmação de finalização */
+.finalizacao-aviso {
+    padding: 12px 16px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    color: #92400e;
+    line-height: 1.5;
+    margin-bottom: 16px;
+}
+
+/* Badge de "técnico confirmado" (Et. 4) */
+.tecnico-confirmado-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: #dcfce7;
+    border: 1px solid #bbf7d0;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #166534;
+}
+
+.tecnico-confirmado-badge svg {
+    width: 14px;
+    height: 14px;
+    stroke: #16a34a;
+    fill: none;
+}
+
+/* Aviso "aguardando confirmação do técnico" */
+.tecnico-aguardando-aviso {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: #fefce8;
+    border: 1px solid #fde68a;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    color: #854d0e;
+}
+
+.tecnico-aguardando-aviso svg {
+    width: 18px;
+    height: 18px;
+    stroke: #ca8a04;
+    fill: none;
+    flex-shrink: 0;
+}

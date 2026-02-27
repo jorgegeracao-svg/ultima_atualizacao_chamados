@@ -34,8 +34,9 @@ body {
 /* Container principal da sidebar — posição fixa na borda esquerda */
 .sidebar {
     width: var(--sidebar-width);                /* 196px definido em 00-geral.css */
-    background: linear-gradient(180deg, #0095db 0%, #2a91c2 100%);
-    color: white;
+    background: #ffffff;
+    border-right: 1px solid #e5e7eb;
+    color: #374151;
     display: flex;
     flex-direction: column;
     padding: 16px 0;
@@ -66,7 +67,7 @@ body {
 .logo-divider {
     width: calc(100% - 24px);
     height: 1px;
-    background: rgba(255, 255, 255, 0.2);
+    background: #e5e7eb;
     margin: 12px 12px;
 }
 
@@ -106,7 +107,7 @@ body {
 .nav-divider {
     width: calc(100% - 24px);
     height: 1px;
-    background: rgba(255, 255, 255, 0.15);
+    background: #e5e7eb;
     margin: 8px 12px;
 }
 
@@ -116,15 +117,15 @@ body {
     padding-bottom: 10px;
 }
 
-/* --- BOTÃO "NOVO CHAMADO" (outline branco) --- */
+/* --- BOTÃO "NOVO CHAMADO" --- */
 .new-ticket-btn {
     width: calc(100% - 16px);
     margin: 0 8px 12px;
     padding: 12px 16px;
-    background: transparent;
+    background: var(--color-primary);
     color: white;
-    border: 2px solid white;           /* Estilo outline (só contorno) */
-    border-radius: 0;                  /* Borda sem arredondamento por design */
+    border: none;
+    border-radius: var(--radius-md);
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
@@ -132,13 +133,12 @@ body {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    transition: background 0.2s, border-color 0.2s, transform 0.1s;
+    transition: background 0.2s, transform 0.1s;
     letter-spacing: 0.5px;
 }
 
 .new-ticket-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.9);
+    background: var(--color-primary-dark);
 }
 
 .new-ticket-btn:active { transform: scale(0.98); }
@@ -160,7 +160,7 @@ body {
     align-items: center;
     gap: 10px;
     padding: 10px 12px;
-    color: rgba(255, 255, 255, 0.8);   /* Levemente transparente quando inativo */
+    color: #6b7280;
     cursor: pointer;
     transition: background 0.2s, color 0.2s;
     margin: 2px 8px;
@@ -169,14 +169,14 @@ body {
 }
 
 .nav-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
+    background: #f3f4f6;
+    color: #111827;
 }
 
 /* Item de nav ativo/selecionado */
 .nav-item.active {
-    background: rgba(255, 255, 255, 0.15);
-    color: white;
+    background: var(--color-primary-light);
+    color: var(--color-primary);
 }
 
 /* Container do ícone SVG do item de nav */
@@ -208,9 +208,16 @@ body {
     align-items: center;
     gap: 8px;
     padding: 10px;
-    background: rgba(255, 255, 255, 0.1);
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
     border-radius: 10px;
     position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.user-profile:hover {
+    background: #f3f4f6;
 }
 
 /* Avatar com iniciais do usuário */
@@ -218,13 +225,13 @@ body {
     width: 36px;
     height: 36px;
     border-radius: var(--radius-md);
-    background: #ddd;
+    background: var(--color-primary);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 13px;
-    color: #666;
+    color: #fff;
     flex-shrink: 0;
 }
 
@@ -236,7 +243,7 @@ body {
 .user-name {
     font-size: 13px;
     font-weight: 600;
-    color: white;
+    color: #111827;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -244,7 +251,7 @@ body {
 
 .user-email {
     font-size: 11px;
-    color: rgba(255, 255, 255, 0.7);
+    color: #6b7280;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -259,7 +266,7 @@ body {
     width: 28px;
     height: 28px;
     border: none;
-    background: rgba(255, 255, 255, 0.15);
+    background: transparent;
     border-radius: var(--radius-sm);
     cursor: pointer;
     display: flex;
@@ -270,7 +277,7 @@ body {
 }
 
 .logout-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: #fee2e2;
     transform: translateY(-50%) scale(1.05);
 }
 
@@ -279,7 +286,7 @@ body {
 .logout-btn svg {
     width: 16px;
     height: 16px;
-    stroke: white;
+    stroke: #ef4444;
     fill: none;
     stroke-width: 2;
     stroke-linecap: round;
@@ -1012,4 +1019,32 @@ body {
 .nav-item[data-page="caixaEntradaPage"] .nav-badge {
     background: #ff4444;
     color: white;
+}
+
+/* ==========================================================================
+   ADIÇÕES — 12 ETAPAS
+   Novos badges de tipo no card de lista para chamados de manutenção.
+   Preserva todo o CSS anterior sem qualquer alteração.
+   ========================================================================== */
+
+/* Badge tipo "manutenção" já existe (tipo-manutencao). Adicionamos variante
+   para subtipos específicos de manutenção que podem aparecer nos cards */
+.ticket-type-badge.tipo-eletrica    { background: #fff7ed; color: #c2410c; }
+.ticket-type-badge.tipo-hidraulica  { background: #eff6ff; color: #1d4ed8; }
+.ticket-type-badge.tipo-estrutura   { background: #f5f3ff; color: #5b21b6; }
+.ticket-type-badge.tipo-ar          { background: #ecfeff; color: #0e7490; }
+
+/* Badge "aguardando confirmação" nos cards da Caixa de Entrada (Et. 4) */
+.ticket-status-badge.badge-aguardando {
+    background: #fef9c3;
+    color: #854d0e;
+}
+
+/* No modo grade, etapa ativa em aguardando tem cor âmbar */
+.tq-status-aguardando { color: #d97706; }
+
+/* Linha de etapa "condicional" (compra) destacada no card lista */
+.tc-etapa-condicional {
+    font-style: italic;
+    color: var(--color-gray-400);
 }

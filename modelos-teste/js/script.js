@@ -6,16 +6,24 @@
 //   - Tela de Novo Chamado (abrir, fechar, submeter formulário)
 //   - Tela de Detalhes do Chamado (abrir, renderizar progresso, mensagens, formulário)
 //   - Renderização de cards nas caixas (Entrada, Log, Saída)
+//   - Fluxo de 12 etapas com roteamento condicional
 //
-// NOTA: checkAuth() e showElementsByPermission() vêm de auth-integration.js,
-// que é carregado antes deste arquivo. Não duplicar aqui.
+// Depende de:
+//   - auth-integration.js  (checkAuth, logout, showElementsByPermission)
+//   - fluxo-config.js      (FLUXO_MANUTENCAO, FLUXO_MAP, CATEGORIA_LABEL)
+//   - fluxo-chamados.js    (Chamado, GerenciadorChamados, gerenciadorChamados)
+//   - card-lista.js        (createCardLista)
+//   - card-quadrado.js     (createCardQuadrado)
+//   - renderizador-etapas.js (RenderizadorEtapas)
 // =============================================================================
+
 
 // =============================================================================
 // VARIÁVEIS GLOBAIS
 // =============================================================================
-let currentTicketId = null; // ID do chamado aberto na tela de detalhes
-let usuarioAtual = null; // Objeto do usuário logado (preenchido no DOMContentLoaded)
+let currentTicketId = null;  // ID do chamado aberto na tela de detalhes
+let usuarioAtual    = null;  // Objeto do usuário logado (preenchido no DOMContentLoaded)
+
 
 // =============================================================================
 // FUNÇÕES GLOBAIS — acessíveis por card-lista.js e card-quadrado.js
@@ -23,12 +31,14 @@ let usuarioAtual = null; // Objeto do usuário logado (preenchido no DOMContentL
 
 /**
  * Retorna a etapa (ou subetapa) atualmente EM_ANDAMENTO de um chamado.
- * Versão global (necessária para card-lista.js e card-quadrado.js).
+ * Considera também AGUARDANDO_CONFIRMACAO (Et. 4).
  */
 function getEtapaAtivaGlobal(chamado) {
     if (!chamado.etapas) return null;
     for (const etapa of chamado.etapas) {
-        if (etapa.status === 'EM_ANDAMENTO') {
+        const ativa = etapa.status === 'EM_ANDAMENTO' ||
+                      etapa.status === 'AGUARDANDO_CONFIRMACAO';
+        if (ativa) {
             if (etapa.subetapas?.length > 0) {
                 const subAtiva = etapa.subetapas.find(s => s.status === 'EM_ANDAMENTO');
                 if (subAtiva) return subAtiva;
@@ -39,32 +49,32 @@ function getEtapaAtivaGlobal(chamado) {
     return null;
 }
 
+/** Retorna o nome legível da etapa ativa nos cards */
 function getNomeEtapaAtiva(chamado) {
     const e = getEtapaAtivaGlobal(chamado);
-    return e ? e.titulo : (chamado.status === 'FINALIZADO' ? 'Finalizado' : '-');
+    if (!e) return chamado.status === 'FINALIZADO' ? 'Finalizado' : '-';
+    if (e.status === 'AGUARDANDO_CONFIRMACAO') return `${e.titulo} (Aguard. confirmação)`;
+    return e.titulo;
 }
 
+/** Retorna o nome legível do responsável pela etapa ativa nos cards */
 function getResponsavelEtapaAtiva(chamado) {
     const e = getEtapaAtivaGlobal(chamado);
     if (!e) return '-';
-    const nomes = {
-        'SOLICITANTE': 'Solicitante',
-        'ADMINISTRATIVO': 'Adm. de Manutenção',
-        'TECNICO': 'Técnico de Manutenção',
-        'COMPRADOR': 'Comprador',
-        'GESTOR': 'Gestor'
-    };
-    return nomes[e.categoria] || e.categoria;
+    return (window.CATEGORIA_LABEL || {})[e.categoria] || e.categoria;
 }
 
+/** Formata Date ou string ISO para 'DD/MM/YYYY, HH:MM' */
 function formatarDataHora(data) {
     if (!data) return '-';
     const d = new Date(data);
-    const data_ = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-    const hora  = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-    return `${data_}, ${hora}`;
+    const dd   = String(d.getDate()).padStart(2, '0');
+    const mm   = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const hh   = String(d.getHours()).padStart(2, '0');
+    const min  = String(d.getMinutes()).padStart(2, '0');
+    return `${dd}/${mm}/${yyyy}, ${hh}:${min}`;
 }
-
 
 
 // =============================================================================
@@ -80,114 +90,92 @@ document.addEventListener('DOMContentLoaded', function () {
     // -------------------------------------------------------------------------
     // Referências aos elementos do DOM
     // -------------------------------------------------------------------------
-    const btnNovoChamado = document.getElementById('btnNovoChamado');
-    const btnVoltar = document.getElementById('btnVoltar');
-    const btnCancelar = document.getElementById('btnCancelar');
-    const newTicketScreen = document.getElementById('newTicketScreen');
-    const newTicketForm = document.getElementById('newTicketForm');
-    const menuToggle = document.getElementById('menuToggle');
-    const sidebar = document.getElementById('sidebar');
-    const sidebarOverlay = document.getElementById('sidebarOverlay');
-    const ticketTypeSelect = document.getElementById('ticketType');
-    const manutencaoFields = document.getElementById('manutencaoFields');
-    const pedidoAnualFields = document.getElementById('pedidoAnualFields');
-    const pedidoAvulsoFields = document.getElementById('pedidoAvulsoFields');
-    const localSelect = document.getElementById('local');
-    const localOutroGroup = document.getElementById('localOutroGroup');
-    const checkOutroTipo = document.getElementById('checkOutroTipo');
+    const btnNovoChamado          = document.getElementById('btnNovoChamado');
+    const btnVoltar               = document.getElementById('btnVoltar');
+    const btnCancelar             = document.getElementById('btnCancelar');
+    const newTicketScreen         = document.getElementById('newTicketScreen');
+    const newTicketForm           = document.getElementById('newTicketForm');
+    const menuToggle              = document.getElementById('menuToggle');
+    const sidebar                 = document.getElementById('sidebar');
+    const sidebarOverlay          = document.getElementById('sidebarOverlay');
+    const ticketTypeSelect        = document.getElementById('ticketType');
+    const manutencaoFields        = document.getElementById('manutencaoFields');
+    const pedidoAnualFields       = document.getElementById('pedidoAnualFields');
+    const pedidoAvulsoFields      = document.getElementById('pedidoAvulsoFields');
+    const localSelect             = document.getElementById('local');
+    const localOutroGroup         = document.getElementById('localOutroGroup');
+    const checkOutroTipo          = document.getElementById('checkOutroTipo');
     const tipoManutencaoOutroGroup = document.getElementById('tipoManutencaoOutroGroup');
-    const fotoUpload = document.getElementById('fotoUpload');
-    const fileName = document.getElementById('fileName');
-    const documentoPedidoAnual = document.getElementById('documentoPedidoAnual');
-    const fileNameAnual = document.getElementById('fileNameAnual');
-    const documentoPedidoAvulso = document.getElementById('documentoPedidoAvulso');
-    const fileNameAvulso = document.getElementById('fileNameAvulso');
-    const ticketDetailsScreen = document.getElementById('ticketDetailsScreen');
-    const btnVoltarDetalhes = document.getElementById('btnVoltarDetalhes');
-    const btnToggleSidebarDetalhes = document.getElementById('btnToggleSidebarDetalhes');
-    const btnToggleSearch = document.getElementById('btnToggleSearch');
-    const detSearchWrapper = document.getElementById('detSearchWrapper');
-    const detSearchInput = document.getElementById('detSearchInput');
-    const btnCloseSearch = document.getElementById('btnCloseSearch');
-    const btnNotificacoes = document.getElementById('btnNotificacoes');
-
-    // Itens de navegação e páginas de conteúdo
-    const navItems = document.querySelectorAll('.nav-item');
-    const pages = document.querySelectorAll('.page-content');
+    const fotoUpload              = document.getElementById('fotoUpload');
+    const fileName                = document.getElementById('fileName');
+    const documentoPedidoAnual    = document.getElementById('documentoPedidoAnual');
+    const fileNameAnual           = document.getElementById('fileNameAnual');
+    const documentoPedidoAvulso   = document.getElementById('documentoPedidoAvulso');
+    const fileNameAvulso          = document.getElementById('fileNameAvulso');
+    const ticketDetailsScreen     = document.getElementById('ticketDetailsScreen');
+    const btnVoltarDetalhes       = document.getElementById('btnVoltarDetalhes');
+    const btnNotificacoes         = document.getElementById('btnNotificacoes');
+    const navItems                = document.querySelectorAll('.nav-item');
+    const pages                   = document.querySelectorAll('.page-content');
 
 
     // =========================================================================
-    // HELPERS — localStorage
+    // HELPERS — localStorage / dados
     // =========================================================================
 
-    /** Retorna todos os chamados salvos no localStorage como objetos simples */
+    /** Retorna todos os chamados salvos como objetos simples (JSON) */
     function getChamadosFluxo() {
         return JSON.parse(localStorage.getItem('chamadosFluxo') || '[]');
     }
 
-    /**
-     * Reidrata um objeto JSON simples como instância de Chamado,
-     * restaurando os métodos da classe (concluirEtapa2, podeEditarEtapa, etc.).
-     */
+    /** Reidrata JSON plano como instância de Chamado (restaura métodos) */
     function reidratarChamado(obj) {
+        if (!obj) return null;
         return Object.assign(Object.create(window.Chamado.prototype), obj);
     }
 
-    /** Gera o número formatado do chamado: ANO + sequencial com 4 dígitos */
+    /** Gera número sequencial ANO+4dígitos para o chamado */
     function gerarNumeroChamado() {
         const ano = new Date().getFullYear();
         const seq = getChamadosFluxo().length;
         return parseInt(`${ano}${String(seq).padStart(4, '0')}`);
     }
 
-
     // =========================================================================
-    // FILTROS DE CAIXA
+    // HELPERS — Etapas e permissões
     // =========================================================================
 
     /**
-     * Verifica se o usuário logado já participou ou vai participar do chamado.
-     * Considera todas as etapas (concluídas, ativas e futuras do fluxo).
-     * - Etapas concluídas: verifica se o nome do usuário está na conclusão
-     * - Etapa ativa: verifica se o perfil pode atendê-la
-     * - Etapas futuras: não é possível saber (fluxo é dinâmico), então
-     *   considera o perfil do usuário frente a todas as categorias do chamado
+     * Retorna a etapa (ou subetapa) EM_ANDAMENTO ou AGUARDANDO_CONFIRMACAO.
+     * Versão local (mesma lógica que getEtapaAtivaGlobal, mas scoped aqui).
      */
-    function chamadoPassouOuPassaPorMim(c) {
-        const perfil = usuarioAtual.perfil;
-        const nome = usuarioAtual.nomeCompleto;
-
-        // Mapa de quais perfis atendem cada categoria de etapa
-        const mapa = {
-            'SOLICITANTE': ['SOLICITANTE', 'ADMIN'],
-            'ADMINISTRATIVO': ['ADMINISTRATIVO', 'ADMIN'],
-            'TECNICO': ['TECNICO', 'ADMIN'],
-            'COMPRADOR': ['COMPRADOR', 'ADMIN'],
-            'GESTOR': ['ADMIN']
-        };
-
-        // Verificar em todas as etapas e subetapas
-        const todasEtapas = [];
-        (c.etapas || []).forEach(e => {
-            todasEtapas.push(e);
-            (e.subetapas || []).forEach(s => todasEtapas.push(s));
-        });
-
-        return todasEtapas.some(e => {
-            // 1. Já atuou: nome está na conclusão
-            if (e.conclusao?.usuario === nome) return true;
-
-            // 2. Perfil pode atender a categoria desta etapa
-            if ((mapa[e.categoria] || []).includes(perfil)) return true;
-
-            return false;
-        });
+    function getEtapaAtiva(chamado) {
+        return getEtapaAtivaGlobal(chamado);
     }
 
-    /**
-     * Caixa de Entrada:
-     * Chamados EM ANDAMENTO cuja etapa ativa o usuário logado pode atender AGORA.
-     */
+    /** Mapa de categoria → perfis que podem atender */
+    const CATEGORIA_MAP = {
+        'SOLICITANTE':    ['SOLICITANTE', 'ADMIN'],
+        'ADMINISTRATIVO': ['ADMINISTRATIVO', 'ADMIN'],
+        'TECNICO':        ['TECNICO', 'ADMIN'],
+        'COMPRADOR':      ['COMPRADOR', 'ADMINISTRATIVO', 'ADMIN'],
+        'GESTOR':         ['ADMIN']
+    };
+
+    function podeAtenderEtapa(etapa, perfil) {
+        if (!etapa) return false;
+        // Et. 4 em AGUARDANDO_CONFIRMACAO: só TECNICO ou ADMIN confirma
+        if (etapa.numero === 4 && etapa.status === 'AGUARDANDO_CONFIRMACAO') {
+            return ['TECNICO', 'ADMIN'].includes(perfil);
+        }
+        return (CATEGORIA_MAP[etapa.categoria] || []).includes(perfil);
+    }
+
+    // =========================================================================
+    // FILTROS DAS CAIXAS
+    // =========================================================================
+
+    /** Caixa Entrada: chamados EM ANDAMENTO cuja etapa ativa o usuário pode atender AGORA */
     function getChamadosEntrada() {
         return getChamadosFluxo().filter(c => {
             if (c.status === 'FINALIZADO') return false;
@@ -196,72 +184,51 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    /**
-     * Caixa Log:
-     * Chamados que já passaram ou vão passar pelo usuário logado,
-     * excluindo os que estão na Entrada (ação pendente agora)
-     * e os Finalizados (que ficam na caixa Finalizados).
-     */
+    /** Caixa Log: chamados em andamento que passam pelo usuário, mas não estão na Entrada */
     function getChamadosLog() {
         return getChamadosFluxo().filter(c => {
             if (c.status === 'FINALIZADO') return false;
-
-            // Excluir os que estão na Entrada (ação pendente agora)
-            const etapaAtiva = getEtapaAtiva(c);
-            if (etapaAtiva && podeAtenderEtapa(etapaAtiva, usuarioAtual.perfil)) return false;
-
-            // Incluir se já passou ou vai passar pelo usuário
-            return chamadoPassouOuPassaPorMim(c);
+            const etapa = getEtapaAtiva(c);
+            if (etapa && podeAtenderEtapa(etapa, usuarioAtual.perfil)) return false;
+            return _chamadoPassaPorMim(c);
         });
     }
 
-    /**
-     * Caixa Finalizados:
-     * Chamados com status FINALIZADO que passaram pelo usuário logado.
-     */
+    /** Caixa Finalizados: chamados FINALIZADO que o usuário participou */
     function getChamadosSaida() {
         return getChamadosFluxo().filter(c => {
             if (c.status !== 'FINALIZADO') return false;
-            return chamadoPassouOuPassaPorMim(c);
+            return _chamadoPassaPorMim(c);
         });
     }
 
-
-    // =========================================================================
-    // HELPERS — Etapas e permissões
-    // =========================================================================
-
     /**
-     * Retorna a etapa (ou subetapa) atualmente EM_ANDAMENTO de um chamado.
-     * @param {Object} chamado
-     * @returns {Object|null}
+     * Retorna true se o usuário logado já atuou ou pode atuar em alguma etapa
+     * do chamado (para incluir nas caixas Log e Finalizados).
      */
-    function getEtapaAtiva(chamado) {
-        if (!chamado.etapas) return null;
-        for (const etapa of chamado.etapas) {
-            if (etapa.status === 'EM_ANDAMENTO') {
-                // Se a etapa tem subetapas, retorna a subetapa ativa
-                if (etapa.subetapas?.length > 0) {
-                    const subAtiva = etapa.subetapas.find(s => s.status === 'EM_ANDAMENTO');
-                    if (subAtiva) return subAtiva;
-                }
-                return etapa;
-            }
-        }
-        return null;
+    function _chamadoPassaPorMim(c) {
+        const perfil = usuarioAtual.perfil;
+        const nome   = usuarioAtual.nomeCompleto;
+
+        const todasEtapas = [];
+        (c.etapas || []).forEach(e => {
+            todasEtapas.push(e);
+            (e.subetapas || []).forEach(s => todasEtapas.push(s));
+        });
+
+        return todasEtapas.some(e => {
+            if (e.conclusao?.usuario === nome) return true;
+            return (CATEGORIA_MAP[e.categoria] || []).includes(perfil);
+        });
     }
 
-    /**
-     * Atualiza os badges de contagem na sidebar.
-     * Chamado sempre que os tickets são renderizados.
-     */
+    /** Atualiza os badges de contagem na sidebar */
     function atualizarBadgesNav() {
         const contagens = {
             badgeEntrada: getChamadosEntrada().length,
-            badgeLog: getChamadosLog().length,
-            badgeSaida: getChamadosSaida().length
+            badgeLog:     getChamadosLog().length,
+            badgeSaida:   getChamadosSaida().length
         };
-
         Object.entries(contagens).forEach(([id, count]) => {
             const el = document.getElementById(id);
             if (!el) return;
@@ -270,78 +237,61 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function podeAtenderEtapa(etapa, perfil) {
-        const mapa = {
-            'SOLICITANTE': ['SOLICITANTE', 'ADMIN'],
-            'ADMINISTRATIVO': ['ADMINISTRATIVO', 'ADMIN'],
-            'TECNICO': ['TECNICO', 'ADMIN'],
-            'COMPRADOR': ['COMPRADOR', 'ADMIN'],
-            'GESTOR': ['ADMIN']
-        };
-        return (mapa[etapa.categoria] || []).includes(perfil);
-    }
-
-    /** Retorna o nome da etapa ativa, ou 'Finalizado' se concluído */
-    function getNomeEtapaAtiva(chamado) {
-        const e = getEtapaAtiva(chamado);
-        return e ? e.titulo : (chamado.status === 'FINALIZADO' ? 'Finalizado' : '-');
-    }
-
-    /** Retorna o nome legível do responsável pela etapa ativa */
-    function getResponsavelEtapaAtiva(chamado) {
-        const e = getEtapaAtiva(chamado);
-        if (!e) return '-';
-        const nomes = {
-            'SOLICITANTE': 'Solicitante',
-            'ADMINISTRATIVO': 'Adm. de Manutenção',
-            'TECNICO': 'Técnico de Manutenção',
-            'COMPRADOR': 'Comprador',
-            'GESTOR': 'Gestor'
-        };
-        return nomes[e.categoria] || e.categoria;
-    }
-
 
     // =========================================================================
     // NAVEGAÇÃO — Sidebar → páginas de conteúdo
-    // Usa o atributo data-page nos .nav-item para identificar qual página ativar,
-    // sem depender de índice posicional (mais robusto a reordenações no HTML).
     // =========================================================================
 
     navItems.forEach(item => {
         item.addEventListener('click', () => {
             const targetPageId = item.dataset.page;
-
-            // Remover estado ativo de todos os itens e páginas
             navItems.forEach(n => n.classList.remove('active'));
             pages.forEach(p => p.classList.remove('active'));
-
-            // Ativar item clicado
             item.classList.add('active');
-
-            // Ativar a página correspondente
             const targetPage = document.getElementById(targetPageId);
             if (targetPage) targetPage.classList.add('active');
-
-            // Renderizar os tickets da caixa ao navegar para ela
             if (targetPageId === 'caixaEntradaPage') renderTickets('entrada');
-            if (targetPageId === 'caixaLogPage') renderTickets('log');
-            if (targetPageId === 'caixaSaidaPage') renderTickets('saida');
-
-            // Fechar sidebar no mobile após navegar
+            if (targetPageId === 'caixaLogPage')     renderTickets('log');
+            if (targetPageId === 'caixaSaidaPage')   renderTickets('saida');
+            if (targetPageId === 'perfilPage')       renderPerfilPage();
             if (window.innerWidth <= 768) closeSidebar();
+
+            // Fechar tela de detalhes se estiver aberta ao navegar pela sidebar
+            if (ticketDetailsScreen?.classList.contains('active')) {
+                ticketDetailsScreen.classList.remove('active', 'fullscreen');
+                currentTicketId = null;
+            }
         });
     });
 
 
     // =========================================================================
-    // SIDEBAR MOBILE — abrir/fechar com overlay e botão hambúrguer
+    // SIDEBAR — clique no perfil do usuário abre a página de perfil
+    // =========================================================================
+
+    document.querySelector('.user-profile')?.addEventListener('click', (e) => {
+        if (e.target.closest('.logout-btn')) return;
+        navItems.forEach(n => n.classList.remove('active'));
+        pages.forEach(p => p.classList.remove('active'));
+        document.querySelector('[data-page="perfilPage"]')?.classList.add('active');
+        document.getElementById('perfilPage')?.classList.add('active');
+        renderPerfilPage();
+        if (window.innerWidth <= 768) closeSidebar();
+        if (ticketDetailsScreen?.classList.contains('active')) {
+            ticketDetailsScreen.classList.remove('active', 'fullscreen');
+            currentTicketId = null;
+        }
+    });
+
+
+    // =========================================================================
+    // SIDEBAR MOBILE
     // =========================================================================
 
     function openSidebar() {
         sidebar.classList.add('open');
         sidebarOverlay.classList.add('active');
-        document.body.style.overflow = 'hidden'; // Impede scroll ao fundo
+        document.body.style.overflow = 'hidden';
     }
 
     function closeSidebar() {
@@ -350,15 +300,10 @@ document.addEventListener('DOMContentLoaded', function () {
         document.body.style.overflow = '';
     }
 
-    // Botão hambúrguer: alterna entre abrir e fechar
     menuToggle?.addEventListener('click', () => {
         sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
     });
-
-    // Clicar no overlay (fundo escuro) fecha a sidebar
     sidebarOverlay?.addEventListener('click', closeSidebar);
-
-    // Em desktop, garantir que a sidebar fique visível (sem estado 'open' residual)
     window.addEventListener('resize', () => {
         if (window.innerWidth > 768) closeSidebar();
     });
@@ -368,28 +313,34 @@ document.addEventListener('DOMContentLoaded', function () {
     // TELA DE NOVO CHAMADO
     // =========================================================================
 
-    /** Abre a tela sobreposta de criação de chamado */
     btnNovoChamado?.addEventListener('click', () => {
         newTicketScreen.classList.add('active');
         if (window.innerWidth <= 768) closeSidebar();
-        // Scroll para o topo da tela (útil em mobile)
         setTimeout(() => { newTicketScreen.scrollTop = 0; }, 100);
     });
 
-    /** Fecha a tela de novo chamado e limpa o formulário */
     function closeTicketScreen() {
         newTicketScreen.classList.remove('active');
         newTicketForm.reset();
-        hideAllTicketFields();
-        if (localOutroGroup) localOutroGroup.classList.add('hidden');
-        if (tipoManutencaoOutroGroup) tipoManutencaoOutroGroup.classList.add('hidden');
-        if (fileName) fileName.textContent = 'Nenhum arquivo selecionado';
+        _hideAllTicketFields();
+        localOutroGroup?.classList.add('hidden');
+        tipoManutencaoOutroGroup?.classList.add('hidden');
+        if (fileName)     fileName.textContent     = 'Nenhum arquivo selecionado';
         if (fileNameAnual) fileNameAnual.textContent = 'Nenhum arquivo selecionado';
         if (fileNameAvulso) fileNameAvulso.textContent = 'Nenhum arquivo selecionado';
+
+        // Resetar chip de solicitante
+        const chip = document.getElementById('solicitanteChip');
+        const hiddenId = document.getElementById('solicitanteId');
+        const inputWrapper = document.querySelector('.user-search-input-wrapper');
+        const searchInput  = document.getElementById('solicitanteSearch');
+        if (chip) chip.classList.remove('visible');
+        if (hiddenId) hiddenId.value = '';
+        if (inputWrapper) inputWrapper.style.display = '';
+        if (searchInput) searchInput.value = '';
     }
 
-    /** Oculta todas as seções de campos específicos de tipo */
-    function hideAllTicketFields() {
+    function _hideAllTicketFields() {
         manutencaoFields?.classList.add('hidden');
         pedidoAnualFields?.classList.add('hidden');
         pedidoAvulsoFields?.classList.add('hidden');
@@ -398,28 +349,24 @@ document.addEventListener('DOMContentLoaded', function () {
     btnVoltar?.addEventListener('click', closeTicketScreen);
     btnCancelar?.addEventListener('click', closeTicketScreen);
 
-    // Exibir o bloco de campos correspondente ao tipo de chamado selecionado
     ticketTypeSelect?.addEventListener('change', (e) => {
-        hideAllTicketFields();
+        _hideAllTicketFields();
         const v = e.target.value;
-        if (v === 'manutencao' && manutencaoFields) manutencaoFields.classList.remove('hidden');
-        if (v === 'pedido_anual' && pedidoAnualFields) pedidoAnualFields.classList.remove('hidden');
-        if (v === 'pedido_avulso' && pedidoAvulsoFields) pedidoAvulsoFields.classList.remove('hidden');
+        if (v === 'manutencao'    && manutencaoFields)    manutencaoFields.classList.remove('hidden');
+        if (v === 'pedido_anual'  && pedidoAnualFields)   pedidoAnualFields.classList.remove('hidden');
+        if (v === 'pedido_avulso' && pedidoAvulsoFields)  pedidoAvulsoFields.classList.remove('hidden');
     });
 
-    // Exibir campo "Especifique o tipo" quando checkbox "Outro" está marcado
     document.querySelectorAll('input[name="tipoManutencao"]').forEach(cb => {
         cb.addEventListener('change', () => {
             tipoManutencaoOutroGroup?.classList.toggle('hidden', !checkOutroTipo?.checked);
         });
     });
 
-    // Exibir campo "Especifique o local" quando Local = "OUTRO"
     localSelect?.addEventListener('change', (e) => {
         localOutroGroup?.classList.toggle('hidden', e.target.value !== 'OUTRO');
     });
 
-    // Atualizar label do arquivo selecionado para cada input de upload
     fotoUpload?.addEventListener('change', e => {
         if (fileName) fileName.textContent = e.target.files[0]?.name || 'Nenhum arquivo selecionado';
     });
@@ -441,71 +388,67 @@ document.addEventListener('DOMContentLoaded', function () {
         const selectedType = ticketTypeSelect?.value;
         if (!selectedType) { alert('Selecione o tipo de chamado'); return; }
 
-        // ------------------------------------------------------------------
-        // Fluxo completo disponível apenas para Manutenção Canteiros
-        // ------------------------------------------------------------------
         if (selectedType === 'manutencao') {
-            const unidade = document.getElementById('unidade')?.value;
-            const local = localSelect?.value;
-            const titulo = document.getElementById('tituloManutencao')?.value.trim();
+            const unidade    = document.getElementById('unidade')?.value;
+            const local      = localSelect?.value;
+            const titulo     = document.getElementById('tituloManutencao')?.value.trim();
             const observacao = document.getElementById('observacaoManutencao')?.value.trim();
+            const email      = document.getElementById('emailSolicitante')?.value.trim();
+            const contato    = document.getElementById('telefoneSolicitante')?.value.trim();
+
             const tiposManutencao = Array.from(
                 document.querySelectorAll('input[name="tipoManutencao"]:checked')
             ).map(cb => cb.value);
 
-            // Validação de campos obrigatórios
+            // Validações
             if (!unidade || !local || !titulo || !observacao || tiposManutencao.length === 0) {
                 alert('Preencha todos os campos obrigatórios de Manutenção');
                 return;
             }
             if (local === 'OUTRO' && !document.getElementById('localOutro')?.value.trim()) {
-                alert('Especifique o local');
-                return;
+                alert('Especifique o local'); return;
             }
             if (tiposManutencao.includes('OUTRO') && !document.getElementById('tipoManutencaoOutro')?.value.trim()) {
-                alert('Especifique o tipo de manutenção');
-                return;
+                alert('Especifique o tipo de manutenção'); return;
             }
 
-            // Montar valores finais (substituindo "OUTRO" pelo valor digitado)
-            const localFinal = local === 'OUTRO'
-                ? document.getElementById('localOutro').value
+            const localFinal  = local === 'OUTRO'
+                ? document.getElementById('localOutro').value.trim()
                 : local;
             const tiposFinais = tiposManutencao.map(t =>
-                t === 'OUTRO' ? document.getElementById('tipoManutencaoOutro').value : t
+                t === 'OUTRO' ? document.getElementById('tipoManutencaoOutro').value.trim() : t
             );
 
             if (typeof window.gerenciadorChamados === 'undefined') {
-                alert('Erro: gerenciador de chamados não carregado.');
-                return;
+                alert('Erro: gerenciador de chamados não carregado.'); return;
             }
 
-            // Criar chamado via GerenciadorChamados
+            // Criar chamado — nova assinatura com email, contato e tipoManutencao
             const novoChamado = window.gerenciadorChamados.criarChamado(
                 titulo,
                 observacao,
                 `${unidade} — ${localFinal} (${tiposFinais.join(', ')})`,
-                usuarioAtual
+                usuarioAtual,
+                [],                           // fotos
+                tiposFinais.join(', '),        // tipoManutencao
+                email,
+                contato
             );
 
-            // Adicionar metadados extras
             novoChamado._solicitanteUsuario = usuarioAtual.usuario;
             novoChamado._numero = gerarNumeroChamado();
             window.gerenciadorChamados.atualizarChamado(novoChamado);
 
             const numFormatado = String(novoChamado._numero).padStart(8, '0');
-            alert(`Chamado ${numFormatado} criado com sucesso!\nAguardando ação da Administração de Manutenção (Etapa 2).`);
+            alert(`Chamado ${numFormatado} criado com sucesso!\nAguardando agendamento da visita pela Administração de Manutenção (Etapa 2).`);
 
         } else {
-            // Outros tipos ainda não têm fluxo de etapas implementado
             alert('Tipo registrado. O fluxo completo de etapas está disponível apenas para Manutenção Canteiros.');
         }
 
         closeTicketScreen();
-
-        // Atualizar as caixas após criar o chamado
-        renderTickets('log');
         renderTickets('entrada');
+        renderTickets('log');
     });
 
 
@@ -513,67 +456,48 @@ document.addEventListener('DOMContentLoaded', function () {
     // RENDERIZAR CARDS NAS CAIXAS
     // =========================================================================
 
-    /**
-     * Renderiza os cards de chamados no grid da caixa especificada,
-     * aplicando os filtros de busca (nome/número, data e tipo).
-     * @param {'entrada'|'log'|'saida'} tipo
-     */
     function renderTickets(tipo) {
         const gridIds = {
             entrada: 'ticketsEntradaGrid',
-            log: 'ticketsLogGrid',
-            saida: 'ticketsSaidaGrid'
+            log:     'ticketsLogGrid',
+            saida:   'ticketsSaidaGrid'
         };
         const filtroIds = {
             entrada: { texto: 'filtroEntradaNumero', data: 'filtroEntradaData', tipo: 'filtroEntradaTipo' },
-            log: { texto: 'filtroLogNumero', data: 'filtroLogData', tipo: 'filtroLogTipo' },
-            saida: { texto: 'filtroSaidaNumero', data: 'filtroSaidaData', tipo: 'filtroSaidaTipo' }
+            log:     { texto: 'filtroLogNumero',     data: 'filtroLogData',     tipo: 'filtroLogTipo'     },
+            saida:   { texto: 'filtroSaidaNumero',   data: 'filtroSaidaData',   tipo: 'filtroSaidaTipo'   }
         };
 
         const grid = document.getElementById(gridIds[tipo]);
         if (!grid) return;
 
-        // Ler valores dos filtros
         const textoFiltro = (document.getElementById(filtroIds[tipo].texto)?.value || '').trim().toLowerCase();
-        const dataFiltro = document.getElementById(filtroIds[tipo].data)?.value || '';
-        const tipoFiltro = document.getElementById(filtroIds[tipo].tipo)?.value || '';
+        const dataFiltro  = document.getElementById(filtroIds[tipo].data)?.value || '';
+        const tipoFiltro  = document.getElementById(filtroIds[tipo].tipo)?.value || '';
 
-        // Buscar lista base da caixa
         const listas = { entrada: getChamadosEntrada, log: getChamadosLog, saida: getChamadosSaida };
         let lista = listas[tipo]();
 
-        // Aplicar filtro de texto (busca por número ou título/nome)
         if (textoFiltro) {
             lista = lista.filter(c => {
-                const numero = String(c._numero || c.id || '').toLowerCase();
-                const titulo = (c.titulo || '').toLowerCase();
+                const numero     = String(c._numero || c.id || '').toLowerCase();
+                const titulo     = (c.titulo || '').toLowerCase();
                 const solicitante = (c.etapas?.[0]?.conclusao?.usuario || c._solicitanteUsuario || '').toLowerCase();
-                return numero.includes(textoFiltro)
-                    || titulo.includes(textoFiltro)
-                    || solicitante.includes(textoFiltro);
+                return numero.includes(textoFiltro) || titulo.includes(textoFiltro) || solicitante.includes(textoFiltro);
             });
         }
-
-        // Aplicar filtro de data (compara apenas a data, sem hora)
         if (dataFiltro) {
             lista = lista.filter(c => {
                 if (!c.dataCriacao) return false;
-                const dataChamado = new Date(c.dataCriacao).toISOString().slice(0, 10);
-                return dataChamado === dataFiltro;
+                return new Date(c.dataCriacao).toISOString().slice(0, 10) === dataFiltro;
             });
         }
-
-        // Aplicar filtro de tipo
         if (tipoFiltro) {
-            lista = lista.filter(c => {
-                const tipo = (c.tipo || c._tipo || '').toLowerCase().replace(/\s/g, '_');
-                return tipo === tipoFiltro;
-            });
+            lista = lista.filter(c => (c._tipo || '').toLowerCase().replace(/\s/g, '_') === tipoFiltro);
         }
 
         grid.innerHTML = '';
 
-        // Estado vazio
         if (lista.length === 0) {
             const buscando = textoFiltro || dataFiltro || tipoFiltro;
             grid.innerHTML = `
@@ -588,96 +512,102 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        lista.forEach(c => grid.appendChild(createTicketCard(c, grid)));
+        lista.forEach(c => grid.appendChild(_createCard(c, grid)));
         atualizarBadgesNav();
     }
 
+    function _createCard(chamado, grid) {
+        const isModoGrade = grid?.classList.contains('modo-grade') ?? false;
+        return isModoGrade
+            ? window.createCardQuadrado(chamado, openTicketDetails)
+            : window.createCardLista(chamado, openTicketDetails);
+    }
 
-    // =========================================================================
-    // LISTENERS DOS FILTROS — re-renderiza ao digitar/selecionar
-    // =========================================================================
-
+    // Listeners dos filtros
     [
         { texto: 'filtroEntradaNumero', data: 'filtroEntradaData', tipo: 'filtroEntradaTipo', caixa: 'entrada' },
-        { texto: 'filtroLogNumero', data: 'filtroLogData', tipo: 'filtroLogTipo', caixa: 'log' },
-        { texto: 'filtroSaidaNumero', data: 'filtroSaidaData', tipo: 'filtroSaidaTipo', caixa: 'saida' }
+        { texto: 'filtroLogNumero',     data: 'filtroLogData',     tipo: 'filtroLogTipo',     caixa: 'log'     },
+        { texto: 'filtroSaidaNumero',   data: 'filtroSaidaData',   tipo: 'filtroSaidaTipo',   caixa: 'saida'   }
     ].forEach(({ texto, data, tipo, caixa }) => {
-        document.getElementById(texto)?.addEventListener('input', () => renderTickets(caixa));
-        document.getElementById(data)?.addEventListener('change', () => renderTickets(caixa));
-        document.getElementById(tipo)?.addEventListener('change', () => renderTickets(caixa));
+        document.getElementById(texto)?.addEventListener('input',  () => renderTickets(caixa));
+        document.getElementById(data)?.addEventListener('change',  () => renderTickets(caixa));
+        document.getElementById(tipo)?.addEventListener('change',  () => renderTickets(caixa));
     });
-
-    /**
-     * Cria e retorna o elemento DOM de um card de chamado.
-     * @param {Object} chamado - Objeto do chamado (JSON simples do localStorage)
-     * @returns {HTMLElement}
-     */
-    function createTicketCard(chamado, grid) {
-        const isModoGrade = grid?.classList.contains('modo-grade') ?? false;
-        if (isModoGrade) {
-            return window.createCardQuadrado(chamado, openTicketDetails);
-        }
-        return window.createCardLista(chamado, openTicketDetails);
-    }
 
 
     // =========================================================================
     // TELA DE DETALHES DO CHAMADO
     // =========================================================================
 
-    /**
-     * Abre a tela de detalhes de um chamado, carregando todos os seus dados.
-     * @param {number|string} chamadoId - ID do chamado a abrir
-     */
     function openTicketDetails(chamadoId) {
         const dadoBruto = getChamadosFluxo().find(c => c.id == chamadoId);
-        if (!dadoBruto) {
-            console.warn('[script.js] Chamado não encontrado, id:', chamadoId);
-            return;
-        }
+        if (!dadoBruto) { console.warn('[script.js] Chamado não encontrado:', chamadoId); return; }
 
-        // Reidratar como instância de Chamado para restaurar os métodos da classe
         const chamado = reidratarChamado(dadoBruto);
-
         currentTicketId = chamadoId;
         window.chamadoAtual = chamado;
 
-        // Preencher cabeçalho (elementos podem não existir se foram removidos do HTML)
-        const numero = chamado._numero || chamado.id;
-        const numEl = document.getElementById('detailsTicketNumber');
-        if (numEl) numEl.textContent = String(numero).padStart(8, '0');
+        // Preencher cabeçalho
+        const numero  = chamado._numero || chamado.id;
+        const numEl   = document.getElementById('detailsTicketNumber');
         const titleEl = document.getElementById('detailsTicketTitle');
+        if (numEl)   numEl.textContent   = '#' + String(numero).padStart(8, '0');
         if (titleEl) titleEl.textContent = chamado.titulo;
 
-        // Elementos opcionais (podem não existir no HTML)
         const abertoPorEl = document.getElementById('detailsAbertoPor');
         if (abertoPorEl) abertoPorEl.textContent = chamado.etapas?.[0]?.conclusao?.usuario || '-';
-
-        const dataAberturaEl = document.getElementById('detailsDataAbertura');
-        if (dataAberturaEl) dataAberturaEl.textContent = formatarDataHora(chamado.dataCriacao);
 
         // Badge de status
         const badge = document.getElementById('detailsStatusBadge');
         if (badge) {
             badge.textContent = chamado.status === 'FINALIZADO' ? 'Finalizado' : 'Em andamento';
-            badge.className = 'chamado-detalhes-badge' + (chamado.status === 'FINALIZADO' ? ' finalizado' : '');
+            badge.className   = 'chamado-detalhes-badge' + (chamado.status === 'FINALIZADO' ? ' finalizado' : '');
         }
 
-        // Renderizar seções da tela de detalhes
+        // Botão copiar número
+        document.getElementById('btnCopiarNumero')?.addEventListener('click', () => {
+            const numStr = String(numero).padStart(8, '0');
+            navigator.clipboard?.writeText(numStr).then(() => {
+                // Toast de confirmação
+                let toast = document.getElementById('copyToast');
+                if (!toast) {
+                    toast = document.createElement('div');
+                    toast.id = 'copyToast';
+                    toast.style.cssText = `
+                        position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(12px);
+                        background: #1f2937; color: #fff; font-size: 13px; font-weight: 600;
+                        padding: 8px 18px; border-radius: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+                        opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; z-index: 9999;
+                        white-space: nowrap;
+                    `;
+                    document.body.appendChild(toast);
+                }
+                toast.textContent = `✓ Número ${numStr} copiado`;
+                toast.style.opacity = '1';
+                toast.style.transform = 'translateX(-50%) translateY(0)';
+                clearTimeout(toast._timeout);
+                toast._timeout = setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(-50%) translateY(12px)';
+                }, 2000);
+            });
+        });
+
+        // Renderizar seções
         renderProgresso(chamado);
-        renderMensagens(chamado);
+        window.renderMensagens(chamado);
         renderFormularioAba(chamado);
         renderResumoFluxo(chamado);
+        renderAnexosAba(chamado);
 
-        // Resetar para a aba Mensagens
+        // Resetar para aba Mensagens
         document.querySelectorAll('.chamado-aba-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.chamado-aba-conteudo').forEach(c => c.classList.remove('active'));
         document.querySelector('[data-aba="mensagens"]')?.classList.add('active');
         document.getElementById('aba-mensagens')?.classList.add('active');
 
-        // Abrir tela de detalhes (sem recolher sidebar automaticamente)
+        // Abrir tela
         ticketDetailsScreen.classList.add('active');
-        // Sincronizar classe fullscreen com estado atual da sidebar
         if (sidebar?.classList.contains('sidebar-hidden')) {
             ticketDetailsScreen.classList.add('fullscreen');
         } else {
@@ -690,31 +620,29 @@ document.addEventListener('DOMContentLoaded', function () {
     // BARRA DE PROGRESSO DAS ETAPAS
     // =========================================================================
 
-    /**
-     * Renderiza os itens da barra de progresso horizontal
-     * com o status correto de cada etapa (concluída / atual / pendente).
-     */
     function renderProgresso(chamado) {
         const container = document.getElementById('progressoLinha');
         if (!container) return;
         container.innerHTML = '';
 
-        // Fonte única de verdade — definida em fluxo-config.js
-        const etapasConfig = window.FLUXO_MANUTENCAO;
+        const etapasConfig = window.FLUXO_MANUTENCAO || [];
 
-        // Montar mapa { numeroEtapa: status } para consulta rápida
+        // Montar mapa { num: status } — inclui etapas condicionais ausentes
         const etapasMap = {};
-        if (chamado.etapas) {
-            chamado.etapas.forEach(e => {
-                etapasMap[String(e.numero)] = e.status;
-                e.subetapas?.forEach(s => { etapasMap[String(s.numero)] = s.status; });
-            });
-        }
+        (chamado.etapas || []).forEach(e => {
+            etapasMap[String(e.numero)] = e.status;
+            (e.subetapas || []).forEach(s => { etapasMap[String(s.numero)] = s.status; });
+        });
 
         etapasConfig.forEach(cfg => {
-            const status = etapasMap[cfg.num];
+            // Etapas condicionais ausentes (ex: Et.7 quando estoque=SIM): ocultar
+            const existeNoFluxo = cfg.num in etapasMap ||
+                                  !cfg.condicional ||
+                                  chamado.status === 'FINALIZADO';
+
+            const status    = etapasMap[cfg.num];
             const concluida = status === 'CONCLUIDA';
-            const atual = status === 'EM_ANDAMENTO';
+            const atual     = status === 'EM_ANDAMENTO' || status === 'AGUARDANDO_CONFIRMACAO';
 
             const item = document.createElement('div');
             item.className = [
@@ -722,17 +650,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 cfg.sub ? 'subetapa' : '',
                 concluida ? 'concluida' : '',
                 atual ? 'atual' : '',
-                !status ? 'pendente' : ''
+                !status ? 'pendente' : '',
+                cfg.condicional && !status ? 'condicional' : ''
             ].filter(Boolean).join(' ');
 
-            // Círculo com número ou ícone de check
             const circulo = document.createElement('div');
             circulo.className = 'progresso-circulo';
             circulo.innerHTML = concluida
                 ? `<svg class="progresso-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>`
                 : cfg.num;
 
-            // Label abaixo do círculo
             const label = document.createElement('div');
             label.className = 'progresso-label';
             label.textContent = cfg.label;
@@ -745,163 +672,127 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     // =========================================================================
-    // ABA FLUXO / RESUMO — métricas e progresso do chamado
+    // ABA FLUXO / RESUMO
     // =========================================================================
 
     function renderResumoFluxo(chamado) {
-        // Oculta os wrappers externos (que ficam fora do sistema de abas)
-        // e usa o #aba-fluxo como único ponto de renderização.
-        const wrapperCards  = document.querySelector('.fluxo-resumo-cards');
-        const wrapperSumario = document.querySelector('.fluxo-sumario-section, .fluxo-progresso-section');
-        if (wrapperCards)   wrapperCards.style.display   = 'none';
-        if (wrapperSumario) wrapperSumario.style.display = 'none';
-
-        // Renderiza dentro do #aba-fluxo (container correto da aba)
         const abaFluxo = document.getElementById('aba-fluxo');
         if (!abaFluxo) return;
         abaFluxo.innerHTML = '';
 
-        // Coluna esquerda — sumário de etapas
         const colSumario = document.createElement('div');
         colSumario.className = 'fluxo-col-sumario';
-
-        // Coluna direita — cards de métricas
-        const container = document.createElement('div');
-        container.className = 'fluxo-col-cards';
-
+        const colCards = document.createElement('div');
+        colCards.className = 'fluxo-col-cards';
         abaFluxo.appendChild(colSumario);
-        abaFluxo.appendChild(container);
+        abaFluxo.appendChild(colCards);
 
-        const agora = new Date();
+        const agora       = new Date();
         const dataAbertura = chamado.dataCriacao ? new Date(chamado.dataCriacao) : null;
-        const diasAberto = dataAbertura
-            ? Math.floor((agora - dataAbertura) / (1000 * 60 * 60 * 24))
-            : null;
+        const diasAberto  = dataAbertura ? Math.floor((agora - dataAbertura) / 86400000) : null;
+        const etapaAtiva  = getEtapaAtiva(chamado);
+        const finalizado  = chamado.status === 'FINALIZADO';
 
-        const etapaAtiva = getEtapaAtiva(chamado);
-        const finalizado = chamado.status === 'FINALIZADO';
-
-        // Horas na etapa atual
-        let horasEtapaAtual = null;
+        // Tempo na etapa atual
+        let horasEtapa = null;
         if (etapaAtiva) {
-            const dataInicioEtapa = etapaAtiva.dataInicio
-                ? new Date(etapaAtiva.dataInicio)
-                : (() => {
-                    const etapas = chamado.etapas || [];
-                    const idxAtiva = etapas.findIndex(e => e.numero === etapaAtiva.numero || e === etapaAtiva);
-                    const anterior = idxAtiva > 0 ? etapas[idxAtiva - 1] : null;
-                    return anterior?.conclusao?.dataHora ? new Date(anterior.conclusao.dataHora) : dataAbertura;
-                })();
-            if (dataInicioEtapa) {
-                horasEtapaAtual = ((agora - dataInicioEtapa) / (1000 * 60 * 60)).toFixed(1);
-            }
+            const idxAtiva = (chamado.etapas || []).findIndex(e =>
+                e.numero === etapaAtiva.numero || e === etapaAtiva
+            );
+            const anterior = idxAtiva > 0 ? chamado.etapas[idxAtiva - 1] : null;
+            const refInicio = anterior?.conclusao?.dataHora
+                ? new Date(anterior.conclusao.dataHora)
+                : dataAbertura;
+            if (refInicio) horasEtapa = ((agora - refInicio) / 3600000).toFixed(1);
         }
 
-        // Data de fim (se finalizado)
+        // Duração total (se finalizado)
         let dataFim = null;
         if (finalizado && chamado.etapas) {
             const ultima = [...chamado.etapas].reverse().find(e => e.conclusao?.dataHora);
             if (ultima) dataFim = new Date(ultima.conclusao.dataHora);
         }
-        const diasEmAndamento = dataAbertura && dataFim
-            ? Math.floor((dataFim - dataAbertura) / (1000 * 60 * 60 * 24))
+        const diasTotal = dataAbertura && dataFim
+            ? Math.floor((dataFim - dataAbertura) / 86400000)
             : diasAberto;
 
-        const totalEtapas = chamado.etapas?.length || 0;
-        const etapasConcluidas = chamado.etapas?.filter(e => e.status === 'CONCLUIDA').length || 0;
-        const nomeResponsavel = getResponsavelEtapaAtiva(chamado);
-        const nomeEtapa = getNomeEtapaAtiva(chamado);
+        const etapasConcluidas = (chamado.etapas || []).filter(e => e.status === 'CONCLUIDA').length;
+        const totalEtapas      = (chamado.etapas || []).length;
 
-        const cards = [
+        // Cards de métricas
+        const metricas = [
             {
                 icone: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`,
                 label: 'Data de abertura',
                 valor: dataAbertura ? formatarDataHora(chamado.dataCriacao) : '-',
-                cor: 'azul'
+                cor:   'azul'
             },
             {
                 icone: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`,
                 label: finalizado ? 'Duração total' : 'Dias em andamento',
-                valor: diasEmAndamento !== null ? `${diasEmAndamento} dia${diasEmAndamento !== 1 ? 's' : ''}` : '-',
-                cor: diasEmAndamento > 7 ? 'laranja' : 'verde'
+                valor: diasTotal !== null ? `${diasTotal} dia${diasTotal !== 1 ? 's' : ''}` : '-',
+                cor:   diasTotal > 7 ? 'laranja' : 'verde'
             },
             {
                 icone: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>`,
                 label: 'Etapa atual',
-                valor: nomeEtapa,
-                cor: finalizado ? 'verde' : 'azul'
+                valor: getNomeEtapaAtiva(chamado),
+                cor:   finalizado ? 'verde' : 'azul'
             },
             {
                 icone: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`,
-                label: finalizado ? 'Finalizado por' : 'Setor responsável agora',
-                valor: nomeResponsavel,
-                cor: 'roxo'
+                label: finalizado ? 'Finalizado por' : 'Setor responsável',
+                valor: getResponsavelEtapaAtiva(chamado),
+                cor:   'roxo'
             },
             {
                 icone: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`,
-                label: 'Tempo na etapa atual',
-                valor: horasEtapaAtual !== null
-                    ? (horasEtapaAtual < 1
-                        ? `${Math.round(horasEtapaAtual * 60)} min`
-                        : `${horasEtapaAtual}h`)
+                label: 'Tempo na etapa',
+                valor: horasEtapa !== null
+                    ? (horasEtapa < 1 ? `${Math.round(horasEtapa * 60)} min` : `${horasEtapa}h`)
                     : (finalizado ? 'Concluído' : '-'),
-                cor: horasEtapaAtual > 48 ? 'vermelho' : horasEtapaAtual > 24 ? 'laranja' : 'verde'
+                cor:   horasEtapa > 48 ? 'vermelho' : horasEtapa > 24 ? 'laranja' : 'verde'
             },
             {
                 icone: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>`,
                 label: 'Etapas concluídas',
                 valor: `${etapasConcluidas} de ${totalEtapas}`,
-                cor: etapasConcluidas === totalEtapas ? 'verde' : 'azul'
+                cor:   etapasConcluidas === totalEtapas ? 'verde' : 'azul'
             }
         ];
 
-        cards.forEach(card => {
+        metricas.forEach(m => {
             const el = document.createElement('div');
-            el.className = `resumo-card resumo-card-${card.cor}`;
+            el.className = `resumo-card resumo-card-${m.cor}`;
             el.innerHTML = `
-                <div class="resumo-card-icone">${card.icone}</div>
+                <div class="resumo-card-icone">${m.icone}</div>
                 <div class="resumo-card-info">
-                    <span class="resumo-card-label">${card.label}</span>
-                    <span class="resumo-card-valor">${card.valor}</span>
+                    <span class="resumo-card-label">${m.label}</span>
+                    <span class="resumo-card-valor">${m.valor}</span>
                 </div>`;
-            container.appendChild(el);
+            colCards.appendChild(el);
         });
 
-        // --- Sumário de etapas ---
-        const sumario = colSumario;
-
-        const catLabels = {
-            SOLICITANTE:    'Solicitante',
-            ADMINISTRATIVO: 'Adm. de Manutenção',
-            TECNICO:        'Técnico',
-            COMPRADOR:      'Comprador',
-            GESTOR:         'Gestor'
-        };
-
-        // Fonte única de verdade — definida em fluxo-config.js
-        const etapasConfig = window.FLUXO_MANUTENCAO;
-
-        // Montar mapa com dados reais { numero: etapaObj }
+        // Sumário de etapas
         const etapasMap = {};
-        chamado.etapas?.forEach(e => {
+        (chamado.etapas || []).forEach(e => {
             etapasMap[String(e.numero)] = e;
-            e.subetapas?.forEach(s => { etapasMap[String(s.numero)] = s; });
+            (e.subetapas || []).forEach(s => { etapasMap[String(s.numero)] = s; });
         });
 
-        const titulo = document.createElement('p');
-        titulo.className = 'fluxo-progresso-titulo';
-        titulo.textContent = 'Sumário das etapas';
-        sumario.appendChild(titulo);
+        const tituloSumario = document.createElement('p');
+        tituloSumario.className = 'fluxo-progresso-titulo';
+        tituloSumario.textContent = 'Sumário das etapas';
+        colSumario.appendChild(tituloSumario);
 
         const lista = document.createElement('div');
         lista.className = 'fluxo-sumario-lista';
 
-        etapasConfig.forEach(cfg => {
+        (window.FLUXO_MANUTENCAO || []).forEach(cfg => {
             const etapa       = etapasMap[cfg.num];
             const concluida   = etapa?.status === 'CONCLUIDA';
-            const emAndamento = etapa?.status === 'EM_ANDAMENTO';
-            // Se não existe no mapa ainda = pendente
-            const responsavel = catLabels[etapa?.categoria || cfg.categoria] || cfg.categoria;
+            const emAndamento = etapa?.status === 'EM_ANDAMENTO' || etapa?.status === 'AGUARDANDO_CONFIRMACAO';
+            const responsavel = (window.CATEGORIA_LABEL || {})[cfg.categoria] || cfg.categoria;
             const dataConc    = etapa?.conclusao?.dataHora ? formatarDataHora(etapa.conclusao.dataHora) : null;
             const usuario     = etapa?.conclusao?.usuario || null;
 
@@ -909,8 +800,11 @@ document.addEventListener('DOMContentLoaded', function () {
             const statusClass = concluida ? 'sumario-status-ok' : emAndamento ? 'sumario-status-ativo' : 'sumario-status-pendente';
             const numClass    = concluida ? 'sumario-num-ok' : emAndamento ? 'sumario-num-ativo' : 'sumario-num-pendente';
 
+            // Ocultar condicionais que não foram ativadas no fluxo deste chamado
+            if (cfg.condicional && !etapa) return;
+
             const row = document.createElement('div');
-            row.className = `sumario-row${emAndamento ? ' sumario-row-ativo' : ''}`;
+            row.className = `sumario-row${emAndamento ? ' sumario-row-ativo' : ''}${cfg.sub ? ' sumario-row-sub' : ''}`;
             row.innerHTML = `
                 <div class="sumario-num ${numClass}">
                     ${concluida
@@ -926,334 +820,122 @@ document.addEventListener('DOMContentLoaded', function () {
                     </div>
                 </div>
                 <span class="sumario-status ${statusClass}">${statusLabel}</span>`;
-
             lista.appendChild(row);
         });
 
-        sumario.appendChild(lista);
+        colSumario.appendChild(lista);
     }
 
 
+
     // =========================================================================
-    // ABA MENSAGENS — lista de etapas concluídas + formulário inline de ação
+    // ABA ANEXOS — coleta todas as imagens/arquivos de todas as etapas
     // =========================================================================
 
-    function renderMensagens(chamado) {
-        const container = document.getElementById('historyMessages');
-        if (!container) return;
-        container.innerHTML = '';
+    function renderAnexosAba(chamado) {
+        const lista = document.getElementById('chamadoAnexosLista');
+        if (!lista) return;
+        lista.innerHTML = '';
 
-        // Coletar etapas e subetapas concluídas em ordem
-        const mensagens = [];
-        chamado.etapas?.forEach(etapa => {
-            if (etapa.status === 'CONCLUIDA' && etapa.conclusao) {
-                mensagens.push({
-                    numero: etapa.numero,
-                    titulo: etapa.titulo,
-                    categoria: etapa.categoria,
-                    usuario: etapa.conclusao.usuario,
-                    dataHora: etapa.conclusao.dataHora,
-                    dados: etapa.dados
-                });
-            }
-            etapa.subetapas?.forEach(sub => {
-                if (sub.status === 'CONCLUIDA' && sub.conclusao) {
-                    mensagens.push({
-                        numero: sub.numero,
-                        titulo: sub.titulo,
-                        categoria: sub.categoria,
-                        usuario: sub.conclusao.usuario,
-                        dataHora: sub.conclusao.dataHora,
-                        dados: sub.dados
+        const todosAnexos = [];
+
+        function coletarAnexosDe(etapaOuSub, rotulo) {
+            const d = etapaOuSub.dados || {};
+            ['fotos', 'fotosAntes', 'fotosDepois', 'anexos'].forEach(campo => {
+                if (Array.isArray(d[campo]) && d[campo].length > 0) {
+                    d[campo].forEach(arq => todosAnexos.push({ ...arq, etapa: rotulo }));
+                }
+            });
+        }
+
+        (chamado.etapas || []).forEach(etapa => {
+            const rotulo = `Etapa ${etapa.numero} — ${etapa.titulo || ''}`;
+            coletarAnexosDe(etapa, rotulo);
+            (etapa.subetapas || []).forEach(sub => {
+                coletarAnexosDe(sub, `Etapa ${sub.numero} — ${sub.titulo || ''}`);
+            });
+        });
+
+        if (todosAnexos.length === 0) {
+            lista.innerHTML = `
+                <div class="chamado-sem-anexos">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                    </svg>
+                    <p>Nenhum anexo enviado</p>
+                </div>`;
+            return;
+        }
+
+        // Agrupa por etapa
+        const grupos = {};
+        todosAnexos.forEach(arq => {
+            if (!grupos[arq.etapa]) grupos[arq.etapa] = [];
+            grupos[arq.etapa].push(arq);
+        });
+
+        Object.entries(grupos).forEach(([etapaLabel, arquivos]) => {
+            const grupo = document.createElement('div');
+            grupo.className = 'anexos-grupo';
+
+            const titulo = document.createElement('div');
+            titulo.className = 'anexos-grupo-titulo';
+            titulo.textContent = etapaLabel;
+            grupo.appendChild(titulo);
+
+            const grid = document.createElement('div');
+            grid.className = 'anexos-grid';
+
+            arquivos.forEach(arq => {
+                const isImagem = arq.tipo && arq.tipo.startsWith('image/');
+                const card = document.createElement('div');
+                card.className = 'anexo-card';
+
+                if (isImagem && arq.dados) {
+                    card.innerHTML = `
+                        <div class="anexo-thumb" style="background-image:url('${arq.dados}')"></div>
+                        <div class="anexo-info">
+                            <span class="anexo-nome">${arq.nome || 'Imagem'}</span>
+                            <span class="anexo-tamanho">${arq.tamanho ? (arq.tamanho / 1024).toFixed(1) + ' KB' : ''}</span>
+                        </div>`;
+                    card.style.cursor = 'pointer';
+                    card.addEventListener('click', () => {
+                        const win = window.open();
+                        win.document.write(`<img src="${arq.dados}" style="max-width:100%;display:block;margin:auto;">`);
                     });
-                }
-            });
-        });
-
-        // Atualizar badge
-        const badgeEl = document.getElementById('badgeMensagens');
-        if (badgeEl) badgeEl.textContent = mensagens.length;
-
-        const badgeClasses = {
-            SOLICITANTE: 'badge-solicitante',
-            TECNICO: 'badge-tecnico',
-            ADMINISTRATIVO: 'badge-administrativo',
-            COMPRADOR: 'badge-comprador',
-            GESTOR: 'badge-admin'
-        };
-        const catLabels = {
-            SOLICITANTE: 'Solicitante',
-            TECNICO: 'Técnico',
-            ADMINISTRATIVO: 'Adm. de Manutenção',
-            COMPRADOR: 'Comprador',
-            GESTOR: 'Gestor'
-        };
-
-        // Estado vazio
-        if (mensagens.length === 0) {
-            const vazio = document.createElement('p');
-            vazio.style.cssText = 'color:var(--color-gray-400);font-size:14px;font-style:italic;padding:20px 0;';
-            vazio.textContent = 'Nenhuma etapa concluída ainda.';
-            container.appendChild(vazio);
-        }
-
-        // Renderizar cada mensagem usando as classes CSS do sistema
-        mensagens.forEach((msg, idx) => {
-            const badgeClass = badgeClasses[msg.categoria] || 'badge-admin';
-            const label = catLabels[msg.categoria] || msg.categoria;
-
-            // Montar campos dos dados da etapa
-            const campos = [];
-            const d = msg.dados || {};
-            if (d.observacao) campos.push({ label: 'OBSERVAÇÃO', valor: d.observacao });
-            if (d.unidade) campos.push({ label: 'UNIDADE', valor: d.unidade });
-            if (d.dataAgendamento) campos.push({ label: 'DATA AGENDADA', valor: formatarData(d.dataAgendamento) + (d.horaAgendamento ? ' às ' + d.horaAgendamento : '') });
-            if (d.descricaoTecnica) campos.push({ label: 'DESCRIÇÃO TÉCNICA', valor: d.descricaoTecnica });
-            if (d.materiaisNecessarios) campos.push({ label: 'MATERIAIS NECESSÁRIOS', valor: d.materiaisNecessarios });
-            if (d.possuiEstoque) campos.push({ label: 'ESTOQUE', valor: d.possuiEstoque === 'SIM' ? '✓ Material disponível' : '✗ Sem material — encaminhado para compras' });
-            if (d.itens) campos.push({ label: 'ITENS SOLICITADOS', valor: d.itens });
-            if (d.justificativa) campos.push({ label: 'JUSTIFICATIVA', valor: d.justificativa });
-            if (d.urgencia) campos.push({ label: 'URGÊNCIA', valor: d.urgencia });
-            if (d.numeroPedido) campos.push({ label: 'Nº DO PEDIDO', valor: d.numeroPedido });
-            if (d.fornecedor) campos.push({ label: 'FORNECEDOR', valor: d.fornecedor });
-            if (d.valorTotal) campos.push({ label: 'VALOR TOTAL', valor: 'R$ ' + d.valorTotal });
-            if (d.dataEntrega) campos.push({ label: 'PREVISÃO DE ENTREGA', valor: formatarData(d.dataEntrega) });
-            if (d.localEntrega) campos.push({ label: 'LOCAL DE ENTREGA', valor: d.localEntrega });
-            if (d.dataServico) campos.push({ label: 'DATA DO SERVIÇO', valor: formatarData(d.dataServico) });
-            if (d.tecnicoResponsavel) campos.push({ label: 'TÉCNICO RESPONSÁVEL', valor: d.tecnicoResponsavel });
-            if (d.descricaoServico) campos.push({ label: 'SERVIÇO EXECUTADO', valor: d.descricaoServico });
-            if (d.materiaisUsados) campos.push({ label: 'MATERIAIS UTILIZADOS', valor: d.materiaisUsados });
-            if (d.observacaoFinal) campos.push({ label: 'OBSERVAÇÃO FINAL', valor: d.observacaoFinal });
-            if (d.avaliacao) campos.push({ label: 'AVALIAÇÃO', valor: '⭐'.repeat(parseInt(d.avaliacao)) });
-            if (campos.length === 0) campos.push({ label: 'STATUS', valor: 'Etapa concluída.' });
-
-            // Wrapper do card — estilo msg-ticket-*
-            const wrapper = document.createElement('div');
-            wrapper.className = 'msg-ticket-wrapper';
-
-            wrapper.innerHTML = `
-                <div class="msg-ticket-card concluida">
-                    <!-- Header azul claro colapsável -->
-                    <div class="msg-ticket-header msg-ticket-toggle">
-                        <div class="msg-ticket-header-esq">
-                            <div class="msg-ticket-num">${msg.numero}</div>
-                            <div class="msg-ticket-header-info">
-                                <span class="msg-ticket-subtexto">Etapa concluída</span>
-                                <span class="msg-ticket-titulo">Etapa ${msg.numero} — ${msg.titulo}</span>
-                            </div>
-                        </div>
-                        <button class="msg-ticket-detalhes-btn msg-ticket-toggle" aria-label="Expandir">
-                            detalhes
-                            <svg class="msg-ticket-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                 stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="18 15 12 9 6 15"></polyline>
+                } else {
+                    card.innerHTML = `
+                        <div class="anexo-thumb anexo-thumb-file">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
                             </svg>
-                        </button>
-                    </div>
-                    <!-- Corpo colapsável -->
-                    <div class="msg-ticket-body collapsed">
-                        <!-- Remetente -->
-                        <div class="msg-ticket-remetente">
-                            <div class="msg-ticket-avatar">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="12" cy="7" r="4"></circle>
-                                </svg>
-                            </div>
-                            <div class="msg-ticket-remetente-info">
-                                <span class="msg-ticket-remetente-nome">${msg.usuario}</span>
-                                <span class="msg-ticket-remetente-unidade">${label}</span>
-                            </div>
-                            <span class="msg-ticket-perfil-badge ${badgeClass}">${label.toUpperCase()}</span>
                         </div>
-                        <div class="msg-ticket-divider"></div>
-                        <!-- Conteúdo -->
-                        <div class="msg-ticket-conteudo">
-                            ${campos.map(c => `<p class="msg-ticket-conteudo-linha"><strong>${c.label}:</strong> ${c.valor}</p>`).join('')}
-                            <span class="msg-ticket-data-rodape">${formatarDataHora(msg.dataHora)}</span>
-                        </div>
-                    </div>
-                </div>`;
-
-            // Toggle ao clicar no header ou botão
-            wrapper.querySelector('.msg-ticket-toggle').addEventListener('click', function () {
-                const body = wrapper.querySelector('.msg-ticket-body');
-                const chevron = wrapper.querySelector('.msg-ticket-chevron');
-                const isCollapsed = body.classList.contains('collapsed');
-                body.classList.toggle('collapsed', !isCollapsed);
-                chevron.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
-            });
-
-            container.appendChild(wrapper);
-        });
-
-        // Formulário inline de ação (ao final da lista)
-        renderFormularioInline(chamado, container);
-    }
-
-
-    /**
-     * Renderiza o formulário inline de atendimento ao final da aba Mensagens.
-     * - Se o usuário tem permissão: mostra campo de observação + botão confirmar
-     * - Se não tem permissão: mostra card informativo de aguardando
-     */
-    function renderFormularioInline(chamado, container) {
-        const etapa = getEtapaAtiva(chamado);
-        if (!etapa || chamado.status === 'FINALIZADO') return;
-
-        const catLabels = {
-            SOLICITANTE: 'Solicitante',
-            TECNICO: 'Técnico',
-            ADMINISTRATIVO: 'Adm. de Manutenção',
-            COMPRADOR: 'Comprador',
-            GESTOR: 'Gestor'
-        };
-
-        const badgeClasses = {
-            SOLICITANTE: 'badge-solicitante',
-            TECNICO: 'badge-tecnico',
-            ADMINISTRATIVO: 'badge-administrativo',
-            COMPRADOR: 'badge-comprador',
-            GESTOR: 'badge-admin'
-        };
-
-        const pode = podeAtenderEtapa(etapa, usuarioAtual.perfil);
-        const responsavel = catLabels[etapa.categoria] || etapa.categoria;
-        const badgeClass = badgeClasses[etapa.categoria] || 'badge-admin';
-        const totalMensagens = container.querySelectorAll('.msg-timeline-item').length;
-
-        // Wrapper com estrutura de timeline (igual aos outros cards)
-        const wrapper = document.createElement('div');
-        wrapper.className = 'msg-timeline-item';
-
-        if (pode) {
-            // --- Card ativo: formulário de ação ---
-            wrapper.innerHTML = `
-                <div class="msg-timeline-coluna">
-                    <div class="msg-timeline-dot msg-timeline-dot--ativo">${totalMensagens + 1}</div>
-                </div>
-                <div class="chamado-mensagem-card msg-card-ativo" id="cardFormularioInline" style="flex:1;min-width:0;">
-                    <div class="chamado-mensagem-header" style="background:var(--color-primary-light);border-bottom-color:var(--color-primary);">
-                        <span class="msg-etapa-titulo" style="color:var(--color-primary);">
-                            Etapa ${etapa.numero} — ${etapa.titulo}
-                        </span>
-                        <span class="chamado-mensagem-perfil-badge ${badgeClass}" style="margin-left:auto;">
-                            ${responsavel}
-                        </span>
-                    </div>
-                    <div class="chamado-mensagem-body">
-                        <div class="form-group" style="margin-bottom:16px;">
-                            <label class="form-label">Observação</label>
-                            <textarea
-                                id="inlineObservacao"
-                                class="form-textarea"
-                                placeholder="Descreva a ação realizada nesta etapa..."
-                                rows="3"
-                                style="min-height:80px;"></textarea>
-                        </div>
-                        <div style="display:flex;gap:10px;justify-content:flex-end;">
-                            <button id="btnInlineAvancar" class="btn-submit" style="display:flex;align-items:center;gap:8px;">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                                     stroke-linecap="round" stroke-linejoin="round"
-                                     style="width:15px;height:15px;">
-                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
-                                Avançar Chamado
-                            </button>
-                        </div>
-                    </div>
-                </div>`;
-
-            container.appendChild(wrapper);
-
-            // Evento do botão Avançar — busca dentro do wrapper, não no document inteiro
-            wrapper.querySelector('#btnInlineAvancar')?.addEventListener('click', () => {
-                const obsEl = wrapper.querySelector('#inlineObservacao');
-                const obs = obsEl?.value.trim();
-                if (!obs) {
-                    obsEl?.focus();
-                    obsEl?.setAttribute('style', 'min-height:80px;border-color:var(--color-danger);box-shadow:0 0 0 3px rgba(239,68,68,0.1);');
-                    return;
+                        <div class="anexo-info">
+                            <span class="anexo-nome">${arq.nome || 'Arquivo'}</span>
+                            <span class="anexo-tamanho">${arq.tamanho ? (arq.tamanho / 1024).toFixed(1) + ' KB' : ''}</span>
+                        </div>`;
+                    if (arq.dados) {
+                        card.style.cursor = 'pointer';
+                        card.addEventListener('click', () => {
+                            const a = document.createElement('a');
+                            a.href = arq.dados;
+                            a.download = arq.nome || 'arquivo';
+                            a.click();
+                        });
+                    }
                 }
-                concluirEtapaComObservacao(chamado, etapa, obs);
+                grid.appendChild(card);
             });
 
-        } else {
-            // --- Card aguardando: sem permissão ---
-            wrapper.innerHTML = `
-                <div class="msg-timeline-coluna">
-                    <div class="msg-timeline-dot msg-timeline-dot--ativo">${totalMensagens + 1}</div>
-                </div>
-                <div class="chamado-mensagem-card" style="flex:1;min-width:0;">
-                    <div class="chamado-mensagem-header">
-                        <span class="msg-etapa-titulo">
-                            Etapa ${etapa.numero} — ${etapa.titulo}
-                        </span>
-                        <span class="chamado-mensagem-perfil-badge ${badgeClass}" style="margin-left:auto;">
-                            ${responsavel}
-                        </span>
-                    </div>
-                    <div class="chamado-mensagem-body">
-                        <p style="font-size:13px;color:var(--color-gray-500);font-style:italic;">
-                            Aguardando ação de: <strong style="color:var(--color-gray-700);">${responsavel}</strong>
-                        </p>
-                    </div>
-                </div>`;
-            container.appendChild(wrapper);
-        }
-    }
-
-
-    /**
-     * Conclui a etapa ativa com a observação digitada no formulário inline,
-     * salva no localStorage e re-renderiza a tela de detalhes.
-     */
-    function concluirEtapaComObservacao(chamado, etapa, observacao) {
-        const etapaNum = etapa.numero;
-
-        // Injeta observação e marca a etapa como concluída
-        const injetarObs = (etapaObj) => {
-            if (!etapaObj.dados) etapaObj.dados = {};
-            etapaObj.dados.observacao = observacao;
-            etapaObj.status    = 'CONCLUIDA';
-            etapaObj.expandida = false;
-            etapaObj.conclusao = { usuario: usuarioAtual.nomeCompleto, dataHora: new Date() };
-        };
-
-        // Mapa de funções — escala sem switch/case
-        const mapaConclusao = {
-            2:   () => chamado.concluirEtapa2('', '', usuarioAtual),
-            3:   () => chamado.concluirEtapa3('', '', usuarioAtual),
-            4:   () => chamado.concluirEtapa4('', usuarioAtual),
-            6:   () => chamado.concluirEtapa6('', usuarioAtual),
-            7:   () => chamado.concluirEtapa7('', '', '', '', usuarioAtual),
-            8:   () => chamado.concluirEtapa8('', '', null, usuarioAtual),
-            9:   () => chamado.concluirEtapa9('CONFIRMADO', '', observacao, usuarioAtual),
-            5.1: () => chamado.concluirSubetapa51('', '', '', usuarioAtual),
-            5.2: () => chamado.concluirSubetapa52('', '', [], '', '', null, usuarioAtual),
-            5.3: () => chamado.concluirSubetapa53('', '', '', '', usuarioAtual),
-        };
-
-        // Executa a função do mapa (chave numérica exata)
-        const chave = Object.keys(mapaConclusao).find(k => Math.abs(Number(k) - etapaNum) < 0.01);
-        if (chave) mapaConclusao[chave]();
-
-        // Sobrescrever com a observação digitada
-        const etapaObj = Number.isInteger(etapaNum)
-            ? chamado.etapas?.find(e => e.numero === etapaNum)
-            : chamado.etapas?.find(e => e.numero === 5)
-                ?.subetapas?.find(s => Math.abs(s.numero - etapaNum) < 0.01);
-
-        if (etapaObj) injetarObs(etapaObj);
-
-        window.gerenciadorChamados.atualizarChamado(chamado);
-        reRenderizarDetalhes(chamado.id);
+            grupo.appendChild(grid);
+            lista.appendChild(grupo);
+        });
     }
 
 
     // =========================================================================
     // RE-RENDERIZAÇÃO CENTRALIZADA DA TELA DE DETALHES
-    // Fonte única — todos os pontos de atualização chamam isso.
     // =========================================================================
 
     function reRenderizarDetalhes(chamadoId) {
@@ -1263,48 +945,64 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!dadoAtualizado) return;
         window.chamadoAtual = dadoAtualizado;
         renderProgresso(dadoAtualizado);
-        renderMensagens(dadoAtualizado);
+        window.renderMensagens(dadoAtualizado);
         renderFormularioAba(dadoAtualizado);
         renderResumoFluxo(dadoAtualizado);
+        renderAnexosAba(dadoAtualizado);
+        atualizarBadgesNav();
     }
 
 
     // =========================================================================
-    // ABA FORMULÁRIO — formulário da etapa ativa
+    // ABA FORMULÁRIO — formulário completo da etapa ativa (via RenderizadorEtapas)
     // =========================================================================
 
-    /**
-     * Renderiza o formulário da etapa ativa na aba Formulário.
-     * Usa o RenderizadorEtapas (renderizador-etapas.js) para gerar o HTML.
-     */
     function renderFormularioAba(chamado) {
         const container = document.getElementById('chamadoFormularioContainer');
         if (!container) return;
 
+        container.innerHTML = '';
+
+        const renderizador = typeof window.RenderizadorEtapas !== 'undefined'
+            ? new window.RenderizadorEtapas('chamadoFormularioContainer', chamado, usuarioAtual)
+            : null;
+
+        // --- Painel superior: dados acumulados das etapas concluídas ---
+        if (renderizador) {
+            const painelDados = renderizador.renderFormularioDados();
+            if (painelDados) container.appendChild(painelDados);
+        }
+
         const etapa = getEtapaAtiva(chamado);
 
-        // Chamado finalizado
         if (!etapa) {
-            container.innerHTML = chamado.status === 'FINALIZADO'
-                ? '<p style="color:#10b981;font-weight:600;padding:20px 0;">✓ Chamado finalizado com sucesso.</p>'
-                : '<p style="color:#9ca3af;font-size:14px;padding:20px 0;font-style:italic;">Nenhuma etapa ativa.</p>';
+            if (chamado.status === 'FINALIZADO') {
+                const msg = document.createElement('p');
+                msg.style.cssText = 'color:#10b981;font-weight:600;padding:20px 0;';
+                msg.textContent = '✓ Chamado finalizado com sucesso.';
+                container.appendChild(msg);
+            }
             return;
         }
 
-        // Sem permissão para atender esta etapa
         if (!podeAtenderEtapa(etapa, usuarioAtual.perfil)) {
-            container.innerHTML = `
-                <div style="padding:24px;background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb;text-align:center;">
-                    <p style="color:#6b7280;font-size:14px;font-weight:500;">Você não tem permissão para atender esta etapa.</p>
-                    <p style="color:#9ca3af;font-size:12px;margin-top:6px;">Responsável: <strong>${etapa.categoria}</strong></p>
-                </div>`;
+            const responsavel = (window.CATEGORIA_LABEL || {})[etapa.categoria] || etapa.categoria;
+            const aviso = document.createElement('div');
+            aviso.className = 'formulario-aguardando';
+            aviso.innerHTML = `<p>Aguardando ação de: <strong>${responsavel}</strong></p>
+                <span class="formulario-etapa-nome">${etapa.titulo}</span>`;
+            container.appendChild(aviso);
             return;
         }
 
-        // Renderizar o formulário via RenderizadorEtapas
-        if (typeof window.RenderizadorEtapas !== 'undefined') {
-            container.innerHTML = '';
-            const renderizador = new window.RenderizadorEtapas('chamadoFormularioContainer', chamado, usuarioAtual);
+        // Divisor entre dados e formulário de ação
+        const divisor = document.createElement('div');
+        divisor.className = 'formulario-divisor';
+        divisor.innerHTML = `<span>Etapa ${etapa.numero} — ${etapa.titulo}</span>`;
+        container.appendChild(divisor);
+
+        // Formulário da etapa ativa
+        if (renderizador) {
             window.renderizadorAtual = renderizador;
             container.appendChild(renderizador.criarConteudo(etapa));
         }
@@ -1312,7 +1010,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     // =========================================================================
-    // TROCA DE ABAS na tela de detalhes
+    // TROCA DE ABAS — tela de detalhes
     // =========================================================================
 
     document.querySelectorAll('.chamado-aba-btn').forEach(btn => {
@@ -1340,86 +1038,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     // =========================================================================
-    // HEADER DE DETALHES — toggle sidebar, busca, notificações
-    // =========================================================================
-
-    // Toggle sidebar manual
-    btnToggleSidebarDetalhes?.addEventListener('click', () => {
-        const isHidden = sidebar?.classList.contains('sidebar-hidden');
-        if (isHidden) {
-            sidebar?.classList.remove('sidebar-hidden');
-            ticketDetailsScreen?.classList.remove('fullscreen');
-        } else {
-            sidebar?.classList.add('sidebar-hidden');
-            ticketDetailsScreen?.classList.add('fullscreen');
-        }
-    });
-
-    // Toggle campo de busca
-    btnToggleSearch?.addEventListener('click', () => {
-        detSearchWrapper?.classList.add('active');
-        setTimeout(() => detSearchInput?.focus(), 50);
-    });
-
-    btnCloseSearch?.addEventListener('click', () => {
-        detSearchWrapper?.classList.remove('active');
-        if (detSearchInput) detSearchInput.value = '';
-    });
-
-    // Fechar busca ao clicar fora
-    document.addEventListener('click', (e) => {
-        if (detSearchWrapper?.classList.contains('active') &&
-            !detSearchWrapper.contains(e.target)) {
-            detSearchWrapper.classList.remove('active');
-            if (detSearchInput) detSearchInput.value = '';
-        }
-    });
-
-    // Buscar chamado ao pressionar Enter
-    detSearchInput?.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            detSearchWrapper?.classList.remove('active');
-            detSearchInput.value = '';
-            return;
-        }
-        if (e.key !== 'Enter') return;
-        const termo = detSearchInput.value.trim().toLowerCase();
-        if (!termo) return;
-
-        const chamados = getChamadosFluxo();
-        const encontrado = chamados.find(c =>
-            c.numero?.toString().toLowerCase().includes(termo) ||
-            c.titulo?.toLowerCase().includes(termo)
-        );
-
-        if (encontrado) {
-            detSearchWrapper?.classList.remove('active');
-            detSearchInput.value = '';
-            openTicketDetails(encontrado.id);
-        } else {
-            detSearchInput.style.borderColor = 'var(--color-danger)';
-            detSearchInput.placeholder = 'Chamado não encontrado';
-            setTimeout(() => {
-                detSearchInput.style.borderColor = '';
-                detSearchInput.placeholder = 'Número ou nome do chamado...';
-            }, 2000);
-        }
-    });
-
-    // Notificações — placeholder (modal será configurado depois)
-    btnNotificacoes?.addEventListener('click', () => {
-        // TODO: abrir modal de notificações
-        console.log('Modal de notificações — a implementar');
-    });
-
-
-    // =========================================================================
-    // ACESSIBILIDADE — tecla Escape fecha telas sobrepostas
+    // ACESSIBILIDADE — Escape fecha telas sobrepostas
     // =========================================================================
 
     document.addEventListener('keydown', (e) => {
         if (e.key !== 'Escape') return;
-        if (sidebar?.classList.contains('open')) closeSidebar();
+        if (sidebar?.classList.contains('open'))           closeSidebar();
         if (newTicketScreen?.classList.contains('active')) closeTicketScreen();
         if (ticketDetailsScreen?.classList.contains('active')) {
             ticketDetailsScreen.classList.remove('active', 'fullscreen');
@@ -1429,66 +1053,243 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     // =========================================================================
-    // FUNÇÕES AUXILIARES DE DATA/HORA
+    // PÁGINA MEU PERFIL
     // =========================================================================
 
-    function formatarData(data) {
-        const d = new Date(data);
-        return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+    function renderPerfilPage() {
+        const container = document.getElementById('perfilContainer');
+        if (!container || !usuarioAtual) return;
+
+        const u = usuarioAtual;
+        const iniciais = (u.nomeCompleto || u.usuario || 'US')
+            .split(' ').slice(0, 2).map(p => p[0]).join('').toUpperCase();
+
+        const perfilLabel = (window.CATEGORIA_LABEL || {})[u.perfil] || u.perfil || '-';
+
+        const todos = getChamadosFluxo();
+        const meus = todos.filter(c => {
+            const todasEtapas = [];
+            (c.etapas || []).forEach(e => {
+                todasEtapas.push(e);
+                (e.subetapas || []).forEach(s => todasEtapas.push(s));
+            });
+            return todasEtapas.some(e => e.conclusao?.usuario === u.nomeCompleto)
+                || c._solicitanteUsuario === u.usuario;
+        });
+        const abertos     = meus.filter(c => c.status !== 'FINALIZADO').length;
+        const finalizados = meus.filter(c => c.status === 'FINALIZADO').length;
+
+        container.innerHTML = `
+            <div class="perfil-wrapper">
+
+                <div class="perfil-header-card">
+                    <div class="perfil-avatar">${iniciais}</div>
+                    <div class="perfil-header-info">
+                        <h2 class="perfil-nome">${u.nomeCompleto || u.usuario}</h2>
+                        <span class="perfil-cargo">${perfilLabel}</span>
+                    </div>
+                </div>
+
+                <div class="perfil-stats">
+                    <div class="perfil-stat">
+                        <span class="perfil-stat-valor">${meus.length}</span>
+                        <span class="perfil-stat-label">Total de chamados</span>
+                    </div>
+                    <div class="perfil-stat">
+                        <span class="perfil-stat-valor" style="color:#f59e0b;">${abertos}</span>
+                        <span class="perfil-stat-label">Em andamento</span>
+                    </div>
+                    <div class="perfil-stat">
+                        <span class="perfil-stat-valor" style="color:#10b981;">${finalizados}</span>
+                        <span class="perfil-stat-label">Finalizados</span>
+                    </div>
+                </div>
+
+                <div class="perfil-secao">
+                    <div class="perfil-secao-header">
+                        <span class="perfil-secao-titulo">Informações pessoais</span>
+                        <button class="perfil-btn-editar" id="btnEditarContato">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                            Editar
+                        </button>
+                    </div>
+                    <div class="perfil-dados">
+                        <div class="perfil-dado-item">
+                            <span class="perfil-dado-label">Nome completo</span>
+                            <span class="perfil-dado-valor">${u.nomeCompleto || '-'}</span>
+                        </div>
+                        <div class="perfil-dado-item">
+                            <span class="perfil-dado-label">Usuário</span>
+                            <span class="perfil-dado-valor">@${u.usuario || '-'}</span>
+                        </div>
+                        <div class="perfil-dado-item">
+                            <span class="perfil-dado-label">E-mail</span>
+                            <span class="perfil-dado-valor">${u.email || '—'}</span>
+                        </div>
+                        <div class="perfil-dado-item">
+                            <span class="perfil-dado-label">Telefone</span>
+                            <span class="perfil-dado-valor">${u.telefone || '—'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="perfil-secao">
+                    <div class="perfil-secao-header">
+                        <span class="perfil-secao-titulo">Acesso</span>
+                    </div>
+                    <div class="perfil-dados">
+                        <div class="perfil-dado-item">
+                            <span class="perfil-dado-label">Perfil</span>
+                            <span class="perfil-dado-valor"><span class="perfil-badge">${perfilLabel}</span></span>
+                        </div>
+                        <div class="perfil-dado-item">
+                            <span class="perfil-dado-label">Status</span>
+                            <span class="perfil-dado-valor"><span class="perfil-badge perfil-badge-green">● ${u.status || 'Ativo'}</span></span>
+                        </div>
+                        ${u.dataCadastro ? `
+                        <div class="perfil-dado-item">
+                            <span class="perfil-dado-label">Desde</span>
+                            <span class="perfil-dado-valor">${formatarDataHora(u.dataCadastro)}</span>
+                        </div>` : ''}
+                    </div>
+                </div>
+
+                <div class="perfil-secao">
+                    <div class="perfil-secao-header">
+                        <span class="perfil-secao-titulo">Segurança</span>
+                        <button class="perfil-btn-editar" id="btnAlterarSenha">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                            Alterar senha
+                        </button>
+                    </div>
+                    <div class="perfil-dados">
+                        <div class="perfil-dado-item">
+                            <span class="perfil-dado-label">Senha</span>
+                            <span class="perfil-dado-valor" style="letter-spacing:3px;color:#9ca3af;">••••••••</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        `;
+
+        document.getElementById('btnEditarContato')?.addEventListener('click', () => {
+            abrirModalPerfil('Editar contato', `
+                <div class="form-group-etapa" style="margin-bottom:14px;">
+                    <label class="form-label-etapa">E-mail</label>
+                    <input type="email" class="form-input-etapa" id="editEmail" value="${u.email || ''}" placeholder="seu@email.com">
+                </div>
+                <div class="form-group-etapa" style="margin-bottom:20px;">
+                    <label class="form-label-etapa">Telefone</label>
+                    <input type="text" class="form-input-etapa" id="editTelefone" value="${u.telefone || ''}" placeholder="(00) 00000-0000">
+                </div>
+                <div style="display:flex;gap:10px;">
+                    <button type="button" class="btn-etapa" style="flex:1;padding:10px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;cursor:pointer;font-family:inherit;" id="cancelarEditarContato">Cancelar</button>
+                    <button type="button" class="btn-etapa btn-etapa-primary" style="flex:1;" id="salvarContato">Salvar</button>
+                </div>
+            `);
+            document.getElementById('cancelarEditarContato')?.addEventListener('click', fecharModalPerfil);
+            document.getElementById('salvarContato')?.addEventListener('click', () => {
+                const email    = document.getElementById('editEmail').value.trim();
+                const telefone = document.getElementById('editTelefone').value.trim();
+                const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
+                const idx = usuarios.findIndex(x => x.usuario === u.usuario);
+                if (idx >= 0) {
+                    usuarios[idx].email    = email;
+                    usuarios[idx].telefone = telefone;
+                    localStorage.setItem('usuarios', JSON.stringify(usuarios));
+                }
+                usuarioAtual.email    = email;
+                usuarioAtual.telefone = telefone;
+                fecharModalPerfil();
+                renderPerfilPage();
+            });
+        });
+
+        document.getElementById('btnAlterarSenha')?.addEventListener('click', () => {
+            abrirModalPerfil('Alterar senha', `
+                <div class="form-group-etapa" style="margin-bottom:14px;">
+                    <label class="form-label-etapa">Senha atual</label>
+                    <input type="password" class="form-input-etapa" id="senhaAtual" placeholder="••••••••">
+                </div>
+                <div class="form-group-etapa" style="margin-bottom:14px;">
+                    <label class="form-label-etapa">Nova senha</label>
+                    <input type="password" class="form-input-etapa" id="novaSenha" placeholder="••••••••">
+                </div>
+                <div class="form-group-etapa" style="margin-bottom:20px;">
+                    <label class="form-label-etapa">Confirmar nova senha</label>
+                    <input type="password" class="form-input-etapa" id="confirmarSenha" placeholder="••••••••">
+                </div>
+                <p id="senhaErro" style="color:#ef4444;font-size:13px;margin-bottom:10px;display:none;"></p>
+                <div style="display:flex;gap:10px;">
+                    <button type="button" class="btn-etapa" style="flex:1;padding:10px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;cursor:pointer;font-family:inherit;" id="cancelarSenha">Cancelar</button>
+                    <button type="button" class="btn-etapa btn-etapa-primary" style="flex:1;" id="salvarSenha">Salvar</button>
+                </div>
+            `);
+            document.getElementById('cancelarSenha')?.addEventListener('click', fecharModalPerfil);
+            document.getElementById('salvarSenha')?.addEventListener('click', () => {
+                const atual     = document.getElementById('senhaAtual').value;
+                const nova      = document.getElementById('novaSenha').value;
+                const confirmar = document.getElementById('confirmarSenha').value;
+                const erroEl    = document.getElementById('senhaErro');
+                const usuarios  = JSON.parse(localStorage.getItem('usuarios') || '[]');
+                const user      = usuarios.find(x => x.usuario === u.usuario);
+                if (!user || user.senha !== atual) {
+                    erroEl.textContent = 'Senha atual incorreta.'; erroEl.style.display = 'block'; return;
+                }
+                if (nova.length < 4) {
+                    erroEl.textContent = 'A nova senha deve ter pelo menos 4 caracteres.'; erroEl.style.display = 'block'; return;
+                }
+                if (nova !== confirmar) {
+                    erroEl.textContent = 'As senhas não coincidem.'; erroEl.style.display = 'block'; return;
+                }
+                user.senha = nova;
+                localStorage.setItem('usuarios', JSON.stringify(usuarios));
+                fecharModalPerfil();
+                let toast = document.getElementById('copyToast');
+                if (!toast) { toast = document.createElement('div'); toast.id = 'copyToast'; document.body.appendChild(toast); }
+                toast.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;font-size:13px;font-weight:600;padding:8px 18px;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,0.25);opacity:1;pointer-events:none;z-index:9999;`;
+                toast.textContent = '✓ Senha alterada com sucesso';
+                clearTimeout(toast._timeout);
+                toast._timeout = setTimeout(() => { toast.style.opacity = '0'; }, 2500);
+            });
+        });
     }
 
-    function formatarHora(data) {
-        const d = new Date(data);
-        return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    function abrirModalPerfil(titulo, corpo) {
+        document.getElementById('modalEditarPerfilTitulo').textContent = titulo;
+        document.getElementById('modalEditarPerfilCorpo').innerHTML = corpo;
+        document.getElementById('modalEditarPerfil').classList.add('active');
     }
 
-    function formatarDataHora(data) {
-        if (!data) return '-';
-        return `${formatarData(data)}, ${formatarHora(data)}`;
+    function fecharModalPerfil() {
+        document.getElementById('modalEditarPerfil').classList.remove('active');
     }
 
-
-    // =========================================================================
-    // LOG DE DIAGNÓSTICO
-    // =========================================================================
-    console.log(`✅ Sistema iniciado | Usuário: ${usuarioAtual.usuario} | Perfil: ${usuarioAtual.perfil}`);
-
-    // Atualizar badges logo ao carregar (sem precisar entrar nas caixas)
-    atualizarBadgesNav();
-    renderTickets('entrada');
-    renderTickets('log');
-    renderTickets('saida');
+    document.getElementById('fecharModalPerfil')?.addEventListener('click', fecharModalPerfil);
 
 
     // =========================================================================
     // TOGGLE LISTA / GRADE
     // =========================================================================
 
-    const GRIDS = {
-        entrada: 'ticketsEntradaGrid',
-        log: 'ticketsLogGrid',
-        saida: 'ticketsSaidaGrid'
-    };
-    const TOGGLES = {
-        entrada: 'viewToggle',
-        log: 'viewToggleLog',
-        saida: 'viewToggleSaida'
-    };
+    const GRIDS   = { entrada: 'ticketsEntradaGrid', log: 'ticketsLogGrid', saida: 'ticketsSaidaGrid' };
+    const TOGGLES = { entrada: 'viewToggle', log: 'viewToggleLog', saida: 'viewToggleSaida' };
 
-    // Recuperar preferência salva (padrão: lista)
     let modoVisualiz = localStorage.getItem('modoVisualizacao') || 'lista';
 
     function aplicarModoVisualizacao(modo) {
         modoVisualiz = modo;
         localStorage.setItem('modoVisualizacao', modo);
-
-        // Aplicar/remover classe nos grids
         Object.values(GRIDS).forEach(gridId => {
-            const grid = document.getElementById(gridId);
-            if (grid) grid.classList.toggle('modo-grade', modo === 'grade');
+            document.getElementById(gridId)?.classList.toggle('modo-grade', modo === 'grade');
         });
-
-        // Atualizar estado ativo nos botões de todos os toggles
         Object.values(TOGGLES).forEach(toggleId => {
             document.querySelectorAll(`#${toggleId} .view-toggle-btn`).forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.view === modo);
@@ -1496,14 +1297,31 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Adicionar listeners nos toggles das 3 caixas
     Object.values(TOGGLES).forEach(toggleId => {
         document.querySelectorAll(`#${toggleId} .view-toggle-btn`).forEach(btn => {
             btn.addEventListener('click', () => aplicarModoVisualizacao(btn.dataset.view));
         });
     });
 
-    // Aplicar ao carregar
     aplicarModoVisualizacao(modoVisualiz);
+
+
+    // =========================================================================
+    // INICIALIZAÇÃO FINAL
+    // =========================================================================
+
+    // =========================================================================
+    // EXPOR FUNÇÕES INTERNAS PARA MÓDULOS EXTERNOS (aba-mensagens.js, etc.)
+    // =========================================================================
+    window.getEtapaAtiva        = getEtapaAtiva;
+    window.podeAtenderEtapa     = podeAtenderEtapa;
+    window.reidratarChamado     = reidratarChamado;
+    window.reRenderizarDetalhes = reRenderizarDetalhes;
+
+    console.log(`✅ Sistema iniciado | Usuário: ${usuarioAtual.usuario} | Perfil: ${usuarioAtual.perfil}`);
+    atualizarBadgesNav();
+    renderTickets('entrada');
+    renderTickets('log');
+    renderTickets('saida');
 
 });

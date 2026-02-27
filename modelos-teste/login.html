@@ -126,7 +126,59 @@
                 <!-- Rodapé da tela -->
                 <div class="login-footer">
                     <p class="footer-text">© 2024 NDS. Todos os direitos reservados.</p>
+                    <button type="button" class="btn-limpar-chamados" id="btnLimparChamados">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                            <path d="M10 11v6"></path>
+                            <path d="M14 11v6"></path>
+                            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+                        </svg>
+                        Limpar chamados
+                    </button>
                 </div>
+
+                <!-- Modal de confirmação -->
+                <div class="modal-overlay" id="modalLimparChamados" role="dialog" aria-modal="true">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">Limpar todos os chamados?</h3>
+                            <button type="button" class="modal-close" id="fecharModalLimpar">
+                                <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
+                        </div>
+                        <p class="modal-description" style="color:#ef4444;">
+                            Essa ação é <strong>irreversível</strong>. Todos os chamados e dados serão apagados permanentemente.
+                        </p>
+                        <div class="modal-actions">
+                            <button type="button" class="btn-cancel" id="cancelarLimpar">Cancelar</button>
+                            <button type="button" class="btn-submit" id="confirmarLimpar" style="background:#ef4444;">Sim, limpar tudo</button>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                    document.getElementById('btnLimparChamados').addEventListener('click', () => {
+                        document.getElementById('modalLimparChamados').classList.add('active');
+                    });
+                    document.getElementById('fecharModalLimpar').addEventListener('click', () => {
+                        document.getElementById('modalLimparChamados').classList.remove('active');
+                    });
+                    document.getElementById('cancelarLimpar').addEventListener('click', () => {
+                        document.getElementById('modalLimparChamados').classList.remove('active');
+                    });
+                    document.getElementById('confirmarLimpar').addEventListener('click', () => {
+                        localStorage.removeItem('chamadosFluxo');
+                        document.getElementById('modalLimparChamados').classList.remove('active');
+                        const btn = document.getElementById('btnLimparChamados');
+                        btn.textContent = '✓ Chamados apagados';
+                        btn.disabled = true;
+                        setTimeout(() => {
+                            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg> Limpar chamados`;
+                            btn.disabled = false;
+                        }, 3000);
+                    });
+                </script>
 
             </div>
         </div>

@@ -11,7 +11,9 @@
         1. 00-geral.css                    → Variáveis, reset, componentes globais
         2. 02-tela-principal.css           → Sidebar, layout, filtros, cards de chamados
         3. 03-novo-chamado-e-detalhes.css  → Formulário de novo chamado + tela de detalhes
-        4. 04-etapas.css                   → Fluxo de etapas (workflow)
+        4. 04-etapas.css                   → Fluxo de etapas (workflow — 12 etapas)
+        5. 06-user-search.css              → Autocomplete de solicitante
+        6. 05-modal-lembrete.css           → Modal de lembretes
     -->
     <link rel="stylesheet" href="css/00-geral.css">
     <link rel="stylesheet" href="css/02-tela-principal.css">
@@ -19,6 +21,7 @@
     <link rel="stylesheet" href="css/04-etapas.css">
     <link rel="stylesheet" href="css/06-user-search.css">
     <link rel="stylesheet" href="css/05-modal-lembrete.css">
+    <link rel="stylesheet" href="css/07-aba-mensagens.css">
 
     <!-- Auth: verifica sessão antes de renderizar a página -->
     <script src="js/auth-integration.js"></script>
@@ -124,6 +127,15 @@
 
             <!-- Configurações (fixas no final da nav) -->
             <div class="nav-settings">
+                <div class="nav-item" data-page="perfilPage" role="button" tabindex="0">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </span>
+                    <span>Meu Perfil</span>
+                </div>
                 <div class="nav-item" data-page="configPage" role="button" tabindex="0">
                     <span class="nav-icon">
                         <svg viewBox="0 0 24 24">
@@ -350,6 +362,16 @@
                 <div class="tickets-grid" id="ticketsSaidaGrid"></div>
             </div>
 
+            <!-- =============================================================
+                 PÁGINA: MEU PERFIL
+            ============================================================== -->
+            <div id="perfilPage" class="page-content">
+                <div class="page-header">
+                    <h1 class="page-title">Meu Perfil</h1>
+                </div>
+                <div id="perfilContainer"></div>
+            </div>
+
         </div>
         <!-- /ÁREA DE CONTEÚDO -->
 
@@ -512,6 +534,14 @@
                                     <label class="tipo-checkbox">
                                         <input type="checkbox" name="tipoManutencao" value="CARPINTARIA">
                                         <span>Carpintaria</span>
+                                    </label>
+                                    <label class="tipo-checkbox">
+                                        <input type="checkbox" name="tipoManutencao" value="AR CONDICIONADO">
+                                        <span>Ar Condicionado</span>
+                                    </label>
+                                    <label class="tipo-checkbox">
+                                        <input type="checkbox" name="tipoManutencao" value="ESTRUTURA">
+                                        <span>Estrutura</span>
                                     </label>
                                     <label class="tipo-checkbox">
                                         <input type="checkbox" name="tipoManutencao" value="LIMPEZA">
@@ -686,70 +716,6 @@
     ====================================================================== -->
     <div class="chamado-detalhes-screen" id="ticketDetailsScreen">
 
-        <div class="chamado-detalhes-header">
-
-            <!-- Lado esquerdo: toggle sidebar -->
-            <div class="chamado-detalhes-header-left">
-                <button class="det-header-btn" id="btnToggleSidebarDetalhes" aria-label="Mostrar/ocultar menu lateral"
-                    title="Mostrar/ocultar menu">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <path d="M22 3H2v18h20V3z" />
-                        <path d="M7 3v18" />
-                        <path d="m15 9-3 3 3 3" />
-                    </svg>
-                </button>
-            </div>
-
-            <!-- Lado direito: busca + notificação + novo chamado -->
-            <div class="chamado-detalhes-header-right">
-
-                <!-- Botão busca (expande campo inline) -->
-                <div class="det-search-wrapper" id="detSearchWrapper">
-                    <button class="det-header-btn" id="btnToggleSearch" aria-label="Buscar chamado"
-                        title="Buscar chamado">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                    </button>
-                    <div class="det-search-field" id="detSearchField">
-                        <input type="text" id="detSearchInput" placeholder="Número ou nome do chamado..."
-                            autocomplete="off">
-                        <button class="det-search-close" id="btnCloseSearch" aria-label="Fechar busca">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round">
-                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                <line x1="6" y1="6" x2="18" y2="18"></line>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Botão notificações -->
-                <button class="det-header-btn det-notif-btn" id="btnNotificacoes" aria-label="Notificações"
-                    title="Notificações">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                    </svg>
-                    <span class="det-notif-badge hidden" id="notifBadge">0</span>
-                </button>
-
-                <!-- Botão voltar / novo chamado -->
-                <button class="det-header-btn det-back-btn" id="btnVoltarDetalhes" aria-label="Fechar" title="Fechar">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
-
-            </div>
-        </div>
-
         <div class="chamado-progresso-wrapper">
 
             <!-- Barra de info: usuário | título | número -->
@@ -795,7 +761,7 @@
                         stroke-linejoin="round">
                         <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                     </svg>
-                    Fluxo / Resumo
+                    Resumo
                 </button>
 
                 <button class="chamado-aba-btn active" data-aba="mensagens" role="tab" aria-selected="true">
@@ -871,14 +837,34 @@
     </div>
     <!-- /TELA DETALHES DO CHAMADO -->
 
+    <!-- =====================================================================
+         MODAL — EDITAR PERFIL
+    ====================================================================== -->
+    <div class="modal-overlay" id="modalEditarPerfil" role="dialog" aria-modal="true">
+        <div class="modal-content" style="max-width:480px;width:100%;">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalEditarPerfilTitulo">Editar dados</h3>
+                <button type="button" class="modal-close" id="fecharModalPerfil">
+                    <svg viewBox="0 0 24 24">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div id="modalEditarPerfilCorpo"></div>
+        </div>
+    </div>
+
 
     <!-- Scripts (carregados no final para não bloquear a renderização) -->
-    <script src="js/fluxo-chamados.js"></script>
+    <!-- ORDEM IMPORTA: config → chamados → renderizador → helpers → main -->
     <script src="js/fluxo-config.js"></script>
+    <script src="js/fluxo-chamados.js"></script>
     <script src="js/renderizador-etapas.js"></script>
     <script src="js/user-search.js"></script>
     <script src="js/card-lista.js"></script>
     <script src="js/card-quadrado.js"></script>
+    <script src="js/aba-mensagens.js"></script>
     <script src="js/script.js"></script>
     <script src="js/modal-lembrete.js"></script>
 

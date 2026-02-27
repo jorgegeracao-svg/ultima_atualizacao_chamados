@@ -126,10 +126,14 @@ function showElementsByPermission() {
     }
 
     // --- Ocultar "Configurações" para perfis sem acesso administrativo ---
-    const navSettings = document.querySelector('.nav-settings');
-    if (navSettings) {
-        navSettings.style.display = ['ADMIN'].includes(user.perfil) ? 'block' : 'none';
+    // "Meu Perfil" fica visível para todos; apenas "Configurações" é restrita
+    const navConfigItem = document.querySelector('[data-page="configPage"]');
+    if (navConfigItem) {
+        navConfigItem.style.display = ['ADMIN'].includes(user.perfil) ? '' : 'none';
     }
+    // Garante que nav-settings (container) seja sempre visível
+    const navSettings = document.querySelector('.nav-settings');
+    if (navSettings) navSettings.style.display = 'block';
 }
 
 

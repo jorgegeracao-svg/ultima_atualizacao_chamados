@@ -301,6 +301,36 @@
     color: var(--color-gray-400);
 }
 
+.btn-limpar-chamados {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    background: none;
+    border: 1px solid #fca5a5;
+    color: #ef4444;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 6px 14px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-limpar-chamados:hover { background: #fef2f2; }
+
+.btn-limpar-chamados:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.btn-limpar-chamados svg {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+}
+
 
 /* --------------------------------------------------------------------------
    PAINEL DE IMAGEM (lado direito — visível apenas em desktop)

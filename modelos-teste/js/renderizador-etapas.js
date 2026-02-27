@@ -8,7 +8,7 @@ function lerArquivosBase64(fileInput) {
     }
     const promessas = Array.from(fileInput.files).map(file => new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload  = e => resolve({ nome: file.name, tipo: file.type, tamanho: file.size, dados: e.target.result });
+        reader.onload = e => resolve({ nome: file.name, tipo: file.type, tamanho: file.size, dados: e.target.result });
         reader.onerror = () => reject(new Error('Erro ao ler: ' + file.name));
         reader.readAsDataURL(file);
     }));
@@ -65,11 +65,11 @@ class RenderizadorEtapas {
         header.className = 'etapa-header';
 
         const categoriaLabel = {
-            'SOLICITANTE':    'Solicitante',
+            'SOLICITANTE': 'Solicitante',
             'ADMINISTRATIVO': 'Administração',
-            'TECNICO':        'Técnico',
-            'COMPRADOR':      'Comprador',
-            'GESTOR':         'Gestor'
+            'TECNICO': 'Técnico',
+            'COMPRADOR': 'Comprador',
+            'GESTOR': 'Gestor'
         }[etapa.categoria] || etapa.categoria;
 
         header.innerHTML = `
@@ -115,7 +115,8 @@ class RenderizadorEtapas {
             9: () => this.renderEtapa9(etapa)
         };
 
-        const renderFn = renderMap[etapa.numero];
+        // Garante que o número seja inteiro para funcionar como chave do mapa
+        const renderFn = renderMap[parseInt(etapa.numero)];
         if (renderFn) inner.appendChild(renderFn());
 
         conteudo.appendChild(inner);
@@ -126,16 +127,9 @@ class RenderizadorEtapas {
     renderEtapa1(etapa) {
         const div = document.createElement('div');
         div.innerHTML = `
-            <div class="etapa-dados-anteriores">
-                <h4>Dados da Solicitação</h4>
-                <div class="dado-item">
-                    <span class="dado-label">Observação:</span>
-                    <span class="dado-valor">${etapa.dados.observacao || '-'}</span>
-                </div>
-                <div class="dado-item">
-                    <span class="dado-label">Unidade:</span>
-                    <span class="dado-valor">${etapa.dados.unidade || '-'}</span>
-                </div>
+            <div class="dado-item">
+                <span class="dado-label">Observação:</span>
+                <span class="dado-valor">${etapa.dados.observacao || '-'}</span>
             </div>
         `;
         return div;
@@ -145,35 +139,13 @@ class RenderizadorEtapas {
     renderEtapa2(etapa) {
         const div = document.createElement('div');
 
-        const etapa1 = this.chamado.etapas.find(e => e.numero === 1);
-        if (etapa1) {
-            div.innerHTML = `
-                <div class="etapa-dados-anteriores">
-                    <h4>Dados do Chamado</h4>
-                    <div class="dado-item">
-                        <span class="dado-label">Observação:</span>
-                        <span class="dado-valor">${etapa1.dados.observacao}</span>
-                    </div>
-                    <div class="dado-item">
-                        <span class="dado-label">Unidade:</span>
-                        <span class="dado-valor">${etapa1.dados.unidade}</span>
-                    </div>
-                </div>
-            `;
-        }
-
         if (etapa.status === 'CONCLUIDA') {
-            div.innerHTML += `
+            div.innerHTML = etapa.dados.observacao ? `
                 <div class="dado-item">
-                    <span class="dado-label">Data de Agendamento:</span>
-                    <span class="dado-valor">${this.formatarData(etapa.dados.dataAgendamento)}</span>
-                </div>
-                <div class="dado-item">
-                    <span class="dado-label">Horário:</span>
-                    <span class="dado-valor">${etapa.dados.horaAgendamento || '-'}</span>
-                </div>
-            `;
-        } else if (this.chamado.podeEditarEtapa(2, this.usuario.perfil)) {
+                    <span class="dado-label">Mensagem ao Solicitante:</span>
+                    <span class="dado-valor">${etapa.dados.observacao}</span>
+                </div>` : '<p style="color:#6b7280;font-style:italic;font-size:13px;">Sem mensagem adicional.</p>';
+        } else if (['ADMINISTRATIVO', 'ADMIN'].includes(this.usuario.perfil)) {
             div.innerHTML += `
                 <form class="etapa-form" id="form-etapa-2">
                     <div class="form-group-etapa">
@@ -183,6 +155,11 @@ class RenderizadorEtapas {
                     <div class="form-group-etapa">
                         <label class="form-label-etapa required">Horário</label>
                         <input type="time" class="form-input-etapa" id="horaAgendamento" required>
+                    </div>
+                    <div class="form-group-etapa">
+                        <label class="form-label-etapa">Mensagem para o Solicitante</label>
+                        <textarea class="form-textarea-etapa" id="observacaoEtapa2" rows="3"
+                            placeholder="Instruções ou observações para o solicitante confirmar o agendamento..."></textarea>
                     </div>
                     <div class="etapa-acoes">
                         <button type="submit" class="btn-etapa btn-etapa-primary">
@@ -199,8 +176,9 @@ class RenderizadorEtapas {
                         e.preventDefault();
                         const dataAgendamento = document.getElementById('dataAgendamento').value;
                         const horaAgendamento = document.getElementById('horaAgendamento').value;
+                        const observacao = document.getElementById('observacaoEtapa2').value.trim();
                         if (dataAgendamento && horaAgendamento) {
-                            this.chamado.concluirEtapa2(dataAgendamento, horaAgendamento, this.usuario);
+                            this.chamado.concluirEtapa2(dataAgendamento, horaAgendamento, observacao, this.usuario);
                             window.gerenciadorChamados.atualizarChamado(this.chamado);
                             this.render();
                         }
@@ -213,36 +191,38 @@ class RenderizadorEtapas {
         return div;
     }
 
-    // ==================== ETAPA 3 - AVALIAÇÃO TÉCNICA ====================
+    // ==================== ETAPA 3 - CONFIRMAÇÃO DA AVALIAÇÃO (SOLICITANTE) ====================
     renderEtapa3(etapa) {
         const div = document.createElement('div');
 
         if (etapa.status === 'CONCLUIDA') {
             div.innerHTML = `
                 <div class="dado-item">
-                    <span class="dado-label">Descrição Técnica:</span>
-                    <span class="dado-valor">${etapa.dados.descricaoTecnica}</span>
+                    <span class="dado-label">Decisão:</span>
+                    <span class="dado-valor">${etapa.dados.decisao === 'APROVADO' ? '✓ Confirmado' : '✗ Reprovado'}</span>
                 </div>
+                ${etapa.dados.motivo ? `
                 <div class="dado-item">
-                    <span class="dado-label">Materiais Necessários:</span>
-                    <span class="dado-valor">${etapa.dados.materiaisNecessarios || 'Nenhum'}</span>
-                </div>
+                    <span class="dado-label">Observação:</span>
+                    <span class="dado-valor">${etapa.dados.motivo}</span>
+                </div>` : ''}
             `;
-        } else if (this.chamado.podeEditarEtapa(3, this.usuario.perfil)) {
-            div.innerHTML = `
+        } else if (['SOLICITANTE', 'ADMIN'].includes(this.usuario.perfil)) {
+            div.innerHTML += `
                 <form class="etapa-form" id="form-etapa-3">
-                    <div class="form-group-etapa">
-                        <label class="form-label-etapa required">Descrição Técnica do Problema</label>
-                        <textarea class="form-textarea-etapa" id="descricaoTecnica" required placeholder="Descreva tecnicamente o problema encontrado..."></textarea>
+                    <div class="form-group-etapa et3-obs-container">
+                        <label class="form-label-etapa">Observação</label>
+                        <textarea class="form-textarea-etapa" id="motivoReprovacao" rows="3"
+                            placeholder="Informe o motivo caso queira reprovar e remarcar o agendamento..."></textarea>
                     </div>
-                    <div class="form-group-etapa">
-                        <label class="form-label-etapa">Materiais/Peças Necessários</label>
-                        <textarea class="form-textarea-etapa" id="materiaisNecessarios" placeholder="Liste os materiais necessários para o reparo..."></textarea>
-                    </div>
-                    <div class="etapa-acoes">
-                        <button type="submit" class="btn-etapa btn-etapa-primary">
+                    <div class="et3-acoes-container">
+                        <button type="button" class="btn-etapa btn-etapa-danger" id="btnReprovarEt3">
+                            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            Reprovar — Remarcar
+                        </button>
+                        <button type="submit" class="btn-etapa btn-etapa-success" id="btnAprovarEt3">
                             <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                            Concluir Avaliação
+                            Confirmar Agendamento
                         </button>
                     </div>
                 </form>
@@ -252,62 +232,83 @@ class RenderizadorEtapas {
                 if (form) {
                     form.addEventListener('submit', (e) => {
                         e.preventDefault();
-                        const descricao = document.getElementById('descricaoTecnica').value;
-                        const materiais = document.getElementById('materiaisNecessarios').value;
-                        if (descricao) {
-                            this.chamado.concluirEtapa3(descricao, materiais, this.usuario);
-                            window.gerenciadorChamados.atualizarChamado(this.chamado);
-                            this.render();
+                        this.chamado.confirmarEtapa3(true, '', this.usuario);
+                        window.gerenciadorChamados.atualizarChamado(this.chamado);
+                        this.render();
+                    });
+                    document.getElementById('btnReprovarEt3')?.addEventListener('click', () => {
+                        const motivo = document.getElementById('motivoReprovacao').value.trim();
+                        if (!motivo) {
+                            document.getElementById('motivoReprovacao').focus();
+                            document.getElementById('motivoReprovacao').style.borderColor = 'var(--color-danger)';
+                            return;
                         }
+                        this.chamado.confirmarEtapa3(false, motivo, this.usuario);
+                        window.gerenciadorChamados.atualizarChamado(this.chamado);
+                        this.render();
                     });
                 }
             }, 0);
         } else {
-            div.innerHTML = '<p style="color:#6b7280;font-style:italic;">Aguardando avaliação técnica...</p>';
+            div.innerHTML += '<p style="color:#6b7280;font-style:italic;">Aguardando confirmação do solicitante...</p>';
         }
         return div;
     }
 
-    // ==================== ETAPA 4 - VERIFICAÇÃO DE ESTOQUE ====================
+    // ==================== ETAPA 4 - COMUNICAR O TÉCNICO ====================
     renderEtapa4(etapa) {
         const div = document.createElement('div');
 
-        const etapa3 = this.chamado.etapas.find(e => e.numero === 3);
-        if (etapa3 && etapa3.dados.materiaisNecessarios) {
-            div.innerHTML = `
-                <div class="etapa-dados-anteriores">
-                    <h4>Materiais Necessários (Etapa 3)</h4>
-                    <div class="dado-item">
-                        <span class="dado-valor">${etapa3.dados.materiaisNecessarios}</span>
-                    </div>
-                </div>
-            `;
-        }
-
-        if (etapa.status === 'CONCLUIDA') {
-            div.innerHTML += `
+        if (etapa.status === 'CONCLUIDA' || etapa.status === 'AGUARDANDO_CONFIRMACAO') {
+            div.innerHTML = etapa.dados.observacao ? `
                 <div class="dado-item">
-                    <span class="dado-label">Material em Estoque?</span>
-                    <span class="dado-valor" style="font-weight:700;color:${etapa.dados.possuiEstoque === 'SIM' ? '#10b981' : '#ef4444'}">
-                        ${etapa.dados.possuiEstoque === 'SIM' ? '✓ Sim — Material disponível' : '✗ Não — Necessário comprar'}
-                    </span>
-                </div>
-            `;
-        } else if (this.chamado.podeEditarEtapa(4, this.usuario.perfil)) {
+                    <span class="dado-label">Mensagem ao Técnico:</span>
+                    <span class="dado-valor">${etapa.dados.observacao}</span>
+                </div>` : '<p style="color:#6b7280;font-style:italic;font-size:13px;">Sem mensagem adicional.</p>';
+            if (etapa.status === 'AGUARDANDO_CONFIRMACAO') {
+                div.innerHTML += `<p style="margin-top:12px;font-size:13px;color:#92400e;font-style:italic;">⏳ Aguardando confirmação do técnico...</p>`;
+            }
+        } else if (['ADMINISTRATIVO', 'ADMIN'].includes(this.usuario.perfil)) {
+            // Montar lista de técnicos do localStorage
+            const todosUsuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
+            const tecnicos = todosUsuarios.filter(u =>
+                u.status !== 'Desligado' && u.status !== 'Inativo' &&
+                (u.perfil === 'TECNICO' || u.perfil === 'ADMIN')
+            );
+            const opcoesSelect = tecnicos.map(t =>
+                `<option value="${t.id}" data-nome="${t.nomeCompleto}" data-usuario="${t.usuario}">
+                    ${t.nomeCompleto} (${t.usuario})
+                </option>`
+            ).join('');
+
             div.innerHTML += `
                 <form class="etapa-form" id="form-etapa-4">
                     <div class="form-group-etapa">
-                        <label class="form-label-etapa required">Possui Material em Estoque?</label>
-                        <select class="form-select-etapa" id="possuiEstoque" required>
-                            <option value="">Selecione...</option>
-                            <option value="SIM">SIM — Material disponível no estoque</option>
-                            <option value="NAO">NÃO — Necessário realizar compra</option>
+                        <label class="form-label-etapa required">Técnico Responsável</label>
+                        <select class="form-select-etapa" id="tecnicoSelect" required>
+                            <option value="">Selecione o técnico...</option>
+                            ${opcoesSelect}
                         </select>
+                    </div>
+                    <div class="form-group-etapa" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div>
+                            <label class="form-label-etapa required">Data da Avaliação</label>
+                            <input type="date" class="form-input-etapa" id="dataAvaliacao" required>
+                        </div>
+                        <div>
+                            <label class="form-label-etapa required">Horário</label>
+                            <input type="time" class="form-input-etapa" id="horaAvaliacao" required>
+                        </div>
+                    </div>
+                    <div class="form-group-etapa">
+                        <label class="form-label-etapa">Mensagem ao Técnico</label>
+                        <textarea class="form-textarea-etapa" id="observacaoEtapa4" rows="3"
+                            placeholder="Instruções ou informações adicionais para o técnico..."></textarea>
                     </div>
                     <div class="etapa-acoes">
                         <button type="submit" class="btn-etapa btn-etapa-primary">
                             <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                            Confirmar Verificação
+                            Comunicar Técnico
                         </button>
                     </div>
                 </form>
@@ -317,9 +318,26 @@ class RenderizadorEtapas {
                 if (form) {
                     form.addEventListener('submit', (e) => {
                         e.preventDefault();
-                        const possuiEstoque = document.getElementById('possuiEstoque').value;
-                        if (possuiEstoque) {
-                            this.chamado.concluirEtapa4(possuiEstoque, this.usuario);
+                        const select = document.getElementById('tecnicoSelect');
+                        const tecnicoId = select.value;
+                        const tecnicoNome = select.options[select.selectedIndex]?.dataset.nome || '';
+                        const tecnicoUser = select.options[select.selectedIndex]?.dataset.usuario || '';
+                        const dataAval = document.getElementById('dataAvaliacao').value;
+                        const horaAval = document.getElementById('horaAvaliacao').value;
+                        const observacao = document.getElementById('observacaoEtapa4').value.trim();
+                        if (tecnicoId && dataAval && horaAval) {
+                            // Persistir data/hora da avaliação nos dados da etapa antes de concluir
+                            const etapaObj = this.chamado._getEtapa ? this.chamado._getEtapa(4) : null;
+                            if (etapaObj) {
+                                etapaObj.dados = { ...etapaObj.dados, dataAvaliacao: dataAval, horaAvaliacao: horaAval };
+                            }
+                            this.chamado.selecionarTecnicoEtapa4(tecnicoUser, tecnicoNome, observacao, this.usuario);
+                            // Guardar data/hora após seleção (selecionarTecnicoEtapa4 sobrescreve dados)
+                            const etapaAtualizada = this.chamado._getEtapa ? this.chamado._getEtapa(4) : null;
+                            if (etapaAtualizada) {
+                                etapaAtualizada.dados.dataAvaliacao = dataAval;
+                                etapaAtualizada.dados.horaAvaliacao = horaAval;
+                            }
                             window.gerenciadorChamados.atualizarChamado(this.chamado);
                             this.render();
                         }
@@ -327,7 +345,7 @@ class RenderizadorEtapas {
                 }
             }, 0);
         } else {
-            div.innerHTML += '<p style="color:#6b7280;font-style:italic;">Aguardando verificação de estoque...</p>';
+            div.innerHTML += '<p style="color:#6b7280;font-style:italic;">Aguardando comunicação do técnico...</p>';
         }
         return div;
     }
@@ -398,7 +416,7 @@ class RenderizadorEtapas {
                 <div class="dado-item"><span class="dado-label">Urgência:</span><span class="dado-valor">${subetapa.dados.urgencia}</span></div>
                 ${subetapa.conclusao ? `<p style="font-size:12px;color:#6b7280;margin-top:8px;">Concluído por <strong>${subetapa.conclusao.usuario}</strong> em ${this.formatarDataHora(subetapa.conclusao.dataHora)}</p>` : ''}
             `;
-        } else if (this.chamado.podeEditarEtapa(5.1, this.usuario.perfil)) {
+        } else if (['TECNICO', 'ADMIN'].includes(this.usuario.perfil)) {
             div.innerHTML = `
                 <form class="etapa-form" id="form-sub-51">
                     <div class="form-group-etapa">
@@ -461,9 +479,9 @@ class RenderizadorEtapas {
                 ${subetapa.dados.observacao ? `<div class="dado-item"><span class="dado-label">Observação:</span><span class="dado-valor">${subetapa.dados.observacao}</span></div>` : ''}
                 ${subetapa.conclusao ? `<p style="font-size:12px;color:#6b7280;margin-top:8px;">Concluído por <strong>${subetapa.conclusao.usuario}</strong> em ${this.formatarDataHora(subetapa.conclusao.dataHora)}</p>` : ''}
             `;
-        } else if (this.chamado.podeEditarEtapa(5.2, this.usuario.perfil)) {
+        } else if (['TECNICO', 'ADMIN'].includes(this.usuario.perfil)) {
             const etapa5 = this.chamado.etapas.find(e => e.numero === 5);
-            const sub51  = etapa5 ? etapa5.subetapas.find(s => Math.abs(s.numero - 5.1) < 0.01) : null;
+            const sub51 = etapa5 ? etapa5.subetapas.find(s => Math.abs(s.numero - 5.1) < 0.01) : null;
 
             let html = '';
             if (sub51) {
@@ -526,10 +544,10 @@ class RenderizadorEtapas {
                     form.addEventListener('submit', (e) => {
                         e.preventDefault();
                         const numeroPedido = document.getElementById('numeroPedido').value;
-                        const fornecedor   = document.getElementById('fornecedorPedido').value;
-                        const valorTotal   = document.getElementById('valorTotalPedido').value;
-                        const observacao   = document.getElementById('observacaoPedido').value;
-                        const fileInput    = document.getElementById('anexoPedido');
+                        const fornecedor = document.getElementById('fornecedorPedido').value;
+                        const valorTotal = document.getElementById('valorTotalPedido').value;
+                        const observacao = document.getElementById('observacaoPedido').value;
+                        const fileInput = document.getElementById('anexoPedido');
                         if (fornecedor && valorTotal) {
                             lerArquivosBase64(fileInput).then(anexos => {
                                 this.chamado.concluirSubetapa52(numeroPedido, fornecedor, [], valorTotal, observacao, anexos, this.usuario);
@@ -558,7 +576,7 @@ class RenderizadorEtapas {
                 ${subetapa.dados.observacao ? `<div class="dado-item"><span class="dado-label">Observação:</span><span class="dado-valor">${subetapa.dados.observacao}</span></div>` : ''}
                 ${subetapa.conclusao ? `<p style="font-size:12px;color:#6b7280;margin-top:8px;">Concluído por <strong>${subetapa.conclusao.usuario}</strong> em ${this.formatarDataHora(subetapa.conclusao.dataHora)}</p>` : ''}
             `;
-        } else if (this.chamado.podeEditarEtapa(5.3, this.usuario.perfil)) {
+        } else if (['COMPRADOR', 'ADMINISTRATIVO', 'ADMIN'].includes(this.usuario.perfil)) {
             div.innerHTML = `
                 <form class="etapa-form" id="form-sub-53">
                     <div class="form-group-etapa">
@@ -590,10 +608,10 @@ class RenderizadorEtapas {
                 if (form) {
                     form.addEventListener('submit', (e) => {
                         e.preventDefault();
-                        const dataEntrega  = document.getElementById('dataEntrega').value;
-                        const horaEntrega  = document.getElementById('horaEntrega').value;
+                        const dataEntrega = document.getElementById('dataEntrega').value;
+                        const horaEntrega = document.getElementById('horaEntrega').value;
                         const localEntrega = document.getElementById('localEntrega').value;
-                        const observacao   = document.getElementById('observacaoEntrega').value;
+                        const observacao = document.getElementById('observacaoEntrega').value;
                         if (dataEntrega && localEntrega) {
                             this.chamado.concluirSubetapa53(dataEntrega, horaEntrega, localEntrega, observacao, this.usuario);
                             window.gerenciadorChamados.atualizarChamado(this.chamado);
@@ -613,7 +631,7 @@ class RenderizadorEtapas {
         const div = document.createElement('div');
 
         const etapa5 = this.chamado.etapas.find(e => e.numero === 5);
-        const sub53  = etapa5 ? etapa5.subetapas.find(s => Math.abs(s.numero - 5.3) < 0.01) : null;
+        const sub53 = etapa5 ? etapa5.subetapas.find(s => Math.abs(s.numero - 5.3) < 0.01) : null;
 
         if (sub53 && sub53.status === 'CONCLUIDA') {
             div.innerHTML = `
@@ -637,7 +655,7 @@ class RenderizadorEtapas {
                 <div class="dado-item"><span class="dado-label">Número da NF:</span><span class="dado-valor">${etapa.dados.numeroNF || '-'}</span></div>
                 ${etapa.dados.observacao ? `<div class="dado-item"><span class="dado-label">Observação:</span><span class="dado-valor">${etapa.dados.observacao}</span></div>` : ''}
             `;
-        } else if (this.chamado.podeEditarEtapa(6, this.usuario.perfil)) {
+        } else if (['ADMINISTRATIVO', 'ADMIN'].includes(this.usuario.perfil)) {
             div.innerHTML += `
                 <form class="etapa-form" id="form-etapa-6">
                     <div class="form-group-etapa">
@@ -684,9 +702,9 @@ class RenderizadorEtapas {
                     form.addEventListener('submit', (e) => {
                         e.preventDefault();
                         const dataRecebimento = document.getElementById('dataRecebimento').value;
-                        const numeroNF        = document.getElementById('numeroNF').value;
-                        const observacao      = document.getElementById('observacaoRecebimento').value;
-                        const fileInput       = document.getElementById('fotosRecebimento');
+                        const numeroNF = document.getElementById('numeroNF').value;
+                        const observacao = document.getElementById('observacaoRecebimento').value;
+                        const fileInput = document.getElementById('fotosRecebimento');
                         if (dataRecebimento) {
                             lerArquivosBase64(fileInput).then(fotos => {
                                 this.chamado.concluirEtapa6(dataRecebimento, numeroNF, observacao, fotos, this.usuario);
@@ -714,7 +732,7 @@ class RenderizadorEtapas {
                 <div class="dado-item"><span class="dado-label">Técnico Responsável:</span><span class="dado-valor">${etapa.dados.tecnicoResponsavel}</span></div>
                 ${etapa.dados.observacao ? `<div class="dado-item"><span class="dado-label">Observação:</span><span class="dado-valor">${etapa.dados.observacao}</span></div>` : ''}
             `;
-        } else if (this.chamado.podeEditarEtapa(7, this.usuario.perfil)) {
+        } else if (['ADMINISTRATIVO', 'ADMIN'].includes(this.usuario.perfil)) {
             div.innerHTML = `
                 <form class="etapa-form" id="form-etapa-7">
                     <div class="form-group-etapa">
@@ -748,8 +766,8 @@ class RenderizadorEtapas {
                         e.preventDefault();
                         const dataServico = document.getElementById('dataServico').value;
                         const horaServico = document.getElementById('horaServico').value;
-                        const tecnico     = document.getElementById('tecnicoResponsavel').value;
-                        const observacao  = document.getElementById('observacaoServico').value;
+                        const tecnico = document.getElementById('tecnicoResponsavel').value;
+                        const observacao = document.getElementById('observacaoServico').value;
                         if (dataServico && horaServico && tecnico) {
                             this.chamado.concluirEtapa7(dataServico, horaServico, tecnico, observacao, this.usuario);
                             window.gerenciadorChamados.atualizarChamado(this.chamado);
@@ -784,7 +802,7 @@ class RenderizadorEtapas {
                 <div class="dado-item"><span class="dado-label">Descrição do Serviço Executado:</span><span class="dado-valor">${etapa.dados.descricaoServico}</span></div>
                 ${etapa.dados.materiaisUsados ? `<div class="dado-item"><span class="dado-label">Materiais Utilizados:</span><span class="dado-valor">${etapa.dados.materiaisUsados}</span></div>` : ''}
             `;
-        } else if (this.chamado.podeEditarEtapa(8, this.usuario.perfil)) {
+        } else if (['TECNICO', 'ADMIN'].includes(this.usuario.perfil)) {
             div.innerHTML += `
                 <form class="etapa-form" id="form-etapa-8">
                     <div class="form-group-etapa">
@@ -855,7 +873,7 @@ class RenderizadorEtapas {
                 ${etapa.dados.avaliacao ? `<div class="dado-item"><span class="dado-label">Avaliação:</span><span class="dado-valor">${'⭐'.repeat(parseInt(etapa.dados.avaliacao))}</span></div>` : ''}
                 ${etapa.dados.observacaoFinal ? `<div class="dado-item"><span class="dado-label">Observação Final:</span><span class="dado-valor">${etapa.dados.observacaoFinal}</span></div>` : ''}
             `;
-        } else if (this.chamado.podeEditarEtapa(9, this.usuario.perfil)) {
+        } else if (['SOLICITANTE', 'ADMIN'].includes(this.usuario.perfil)) {
             div.innerHTML = `
                 <form class="etapa-form" id="form-etapa-9">
                     <p style="color:#374151;margin-bottom:16px;">Confirme que o serviço foi executado corretamente e o problema foi resolvido para finalizar o chamado.</p>
@@ -888,7 +906,7 @@ class RenderizadorEtapas {
                     form.addEventListener('submit', (e) => {
                         e.preventDefault();
                         if (confirm('Confirma que o problema foi resolvido e deseja finalizar o chamado?')) {
-                            const avaliacao  = document.getElementById('avaliacaoAtendimento').value;
+                            const avaliacao = document.getElementById('avaliacaoAtendimento').value;
                             const observacao = document.getElementById('observacaoFinal').value;
                             this.chamado.concluirEtapa9('CONFIRMADO', avaliacao, observacao, this.usuario);
                             window.gerenciadorChamados.atualizarChamado(this.chamado);
@@ -904,22 +922,103 @@ class RenderizadorEtapas {
         return div;
     }
 
+    // ==================== FORMULÁRIO — PAINEL ACUMULADO DE DADOS ====================
+    // Exibe na aba "Formulário" todos os dados coletados nas etapas concluídas,
+    // EXCETO observações/mensagens (que ficam no accordion de cada etapa).
+    renderFormularioDados() {
+        const div = document.createElement('div');
+        div.className = 'formulario-dados-acumulados';
+
+        const etapas = this.chamado.etapas || [];
+
+        const blocos = [];
+
+        // --- Etapa 1: dados de abertura ---
+        const et1 = etapas.find(e => e.numero === 1);
+        if (et1 && et1.status === 'CONCLUIDA') {
+            const d = et1.dados;
+            let html = `<div class="form-dados-bloco">
+                <div class="form-dados-bloco-titulo">
+                    <span class="form-dados-num">1</span> Abertura do Chamado
+                </div>`;
+            if (d.unidade)        html += `<div class="dado-item"><span class="dado-label">Unidade / Local:</span><span class="dado-valor">${d.unidade}</span></div>`;
+            if (d.tipoManutencao) html += `<div class="dado-item"><span class="dado-label">Tipo de Manutenção:</span><span class="dado-valor">${d.tipoManutencao}</span></div>`;
+            if (d.email)          html += `<div class="dado-item"><span class="dado-label">E-mail:</span><span class="dado-valor">${d.email}</span></div>`;
+            if (d.contato)        html += `<div class="dado-item"><span class="dado-label">Contato:</span><span class="dado-valor">${d.contato}</span></div>`;
+            html += `</div>`;
+            blocos.push(html);
+        }
+
+        // --- Etapa 2: agendamento ---
+        const et2 = etapas.find(e => e.numero === 2);
+        if (et2 && et2.status === 'CONCLUIDA') {
+            const d = et2.dados;
+            let html = `<div class="form-dados-bloco">
+                <div class="form-dados-bloco-titulo">
+                    <span class="form-dados-num">2</span> Agendamento da Avaliação
+                </div>`;
+            if (d.dataAgendamento) html += `<div class="dado-item"><span class="dado-label">Data:</span><span class="dado-valor">${this.formatarData(d.dataAgendamento)}</span></div>`;
+            if (d.horaAgendamento) html += `<div class="dado-item"><span class="dado-label">Horário:</span><span class="dado-valor">${d.horaAgendamento}</span></div>`;
+            html += `</div>`;
+            blocos.push(html);
+        }
+
+        // --- Etapa 3: confirmação ---
+        const et3 = etapas.find(e => e.numero === 3);
+        if (et3 && et3.status === 'CONCLUIDA') {
+            const d = et3.dados;
+            let html = `<div class="form-dados-bloco">
+                <div class="form-dados-bloco-titulo">
+                    <span class="form-dados-num">3</span> Confirmação da Avaliação
+                </div>
+                <div class="dado-item"><span class="dado-label">Decisão:</span>
+                <span class="dado-valor" style="color:${d.decisao === 'APROVADO' ? '#10b981' : '#ef4444'};font-weight:600;">
+                    ${d.decisao === 'APROVADO' ? '✓ Confirmado' : '✗ Reprovado'}
+                </span></div>`;
+            html += `</div>`;
+            blocos.push(html);
+        }
+
+        // --- Etapa 4: técnico ---
+        const et4 = etapas.find(e => e.numero === 4);
+        if (et4 && (et4.status === 'CONCLUIDA' || et4.status === 'AGUARDANDO_CONFIRMACAO')) {
+            const d = et4.dados;
+            let html = `<div class="form-dados-bloco">
+                <div class="form-dados-bloco-titulo">
+                    <span class="form-dados-num">4</span> Técnico Designado
+                </div>`;
+            if (d.tecnicoNome)   html += `<div class="dado-item"><span class="dado-label">Técnico:</span><span class="dado-valor">${d.tecnicoNome}</span></div>`;
+            if (d.dataAvaliacao) html += `<div class="dado-item"><span class="dado-label">Data da Avaliação:</span><span class="dado-valor">${this.formatarData(d.dataAvaliacao)}</span></div>`;
+            if (d.horaAvaliacao) html += `<div class="dado-item"><span class="dado-label">Horário:</span><span class="dado-valor">${d.horaAvaliacao}</span></div>`;
+            html += `</div>`;
+            blocos.push(html);
+        }
+
+        if (blocos.length === 0) {
+            div.innerHTML = '<p style="color:#9ca3af;font-size:13px;font-style:italic;padding:8px 0;">Nenhum dado registrado ainda.</p>';
+        } else {
+            div.innerHTML = blocos.join('');
+        }
+
+        return div;
+    }
+
     // ==================== UTILITÁRIOS ====================
     formatarData(data) {
         if (!data) return '-';
         const d = new Date(data);
-        return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+        return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
     }
 
     formatarDataHora(data) {
         if (!data) return '-';
         const d = new Date(data);
-        return `${this.formatarData(data)} às ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        return `${this.formatarData(data)} às ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
     }
 }
 
 // ==================== FUNÇÕES GLOBAIS PARA TOGGLE ====================
-window.toggleEtapa = function(numero) {
+window.toggleEtapa = function (numero) {
     const chamado = window.chamadoAtual;
     if (chamado) {
         chamado.toggleEtapa(numero);
@@ -928,7 +1027,7 @@ window.toggleEtapa = function(numero) {
     }
 };
 
-window.toggleSubetapa = function(numero) {
+window.toggleSubetapa = function (numero) {
     const chamado = window.chamadoAtual;
     if (chamado) {
         chamado.toggleEtapa(parseFloat(numero));
